@@ -40,6 +40,7 @@ status: active
 | **[[DL-0001-vitest]]** | `DL`, `결정로그`, `운영`, `실무결정` | • 코딩 컨벤션, 라이브러리 교체 등 실무적 결정 기록 시 | DL-0001: TDD 테스트 러너로 Vitest 채택 |
 | **[[DL-0002-boost-agent-workflow|document/decision_log/DL-0002-boost-agent-workflow.md]]** | `DL`, `boost`, `다중에이전트`, `무한루프`, `husky` | • /boost 모드 성과 확인 및 훅(Hook) 정책 완화 배경 참조 시 | DL-0002: /boost 모드 성과 및 다중 에이전트 워크플로우 결정 |
 | **[[DL-0003-eventsource|document/decision_log/DL-0003-eventsource.md]]** | `DL`, `테스트`, `SSE`, `eventsource` | • E2E 테스트에서 SSEClientTransport 구성 관련 배경 참조 시 | DL-0003: E2E 테스트 시 SSE 동작을 위한 eventsource 도입 |
+| **[[DL-0004-subagent-share-guardrail\|document/decision_log/DL-0004-subagent-share-guardrail.md]]** | `DL`, `서브에이전트`, `격리`, `worktree`, `share` | • 서브에이전트 호출 및 워크트리 가드레일 훅 구현 배경 확인 시 | DL-0004: 서브에이전트 격리 환경(share) 강제 및 Git Worktree 가드레일 고도화 |
 | **[[todo]]** | `todo`, `할일`, `태스크`, `진행현황` | • 다음 개발 목표(Task)를 확인하거나 완료 처리할 때 | 전체 프로젝트의 진행 현황 및 TO-DO 리스트 |
 | **[[integration_test_scenarios]]** | `테스트`, `시나리오`, `UAT`, `E2E` | • 서버 구동 후 실 환경 연동 및 통합 테스트 수행 시 | 종단간(E2E) 통합 테스트 및 인수 테스트(UAT) 시나리오 |
 | **[[setup_and_deployment|document/setup_and_deployment.md]]** | `설정`, `배포`, `연동`, `setup`, `deployment`, `claude`, `cursor`, `stdio`, `sse`, `환경변수` | • Claude Desktop 또는 Cursor IDE에 MCP 서버 연동 설정 시<br>• Stdio 또는 SSE(HTTP) 전송 모드로 서버 배포 시<br>• Redmine REST API 활성화 및 API Key 발급 방법 확인 시 | Claude Desktop 및 Cursor IDE 연동 가이드, 배포 모드(Stdio/SSE) 설정 및 문제 해결 |

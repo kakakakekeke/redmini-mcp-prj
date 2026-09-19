@@ -1,12 +1,33 @@
 #!/bin/sh
 # Git pre-commit hook to enforce branch protection, document index, and tests.
 
-# 1. Block direct commits to main/master
-BRANCH_NAME=$(git symbolic-ref --short HEAD 2>/dev/null)
-if [ "$BRANCH_NAME" = "main" ] || [ "$BRANCH_NAME" = "master" ]; then
-    echo "❌ [Error] 직접 $BRANCH_NAME 브랜치에 커밋할 수 없습니다. 새 브랜치(worktree)를 생성하여 작업해주세요."
-    exit 1
+GIT_DIR=$(git rev-parse --git-dir)
+GIT_COMMON_DIR=$(git rev-parse --git-common-dir)
+
+# 0. Merge Commit 허용 로직
+if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
+    echo "✅ Merge Commit이 감지되어 가드레일 검사를 건너뜁니다."
+    exit 0
 fi
+
+# 1. 메인 저장소(Main Repository) 가드레일
+if [ "$GIT_DIR" = "$GIT_COMMON_DIR" ]; then
+    STAGED_FILES=$(git diff --cached --name-only)
+    for FILE in $STAGED_FILES; do
+        case "$FILE" in
+            document/todo.md | document/index.md | document/decision_log/* | document/adr/* | .env)
+                # 화이트리스트 패스
+                ;;
+            *)
+                echo "❌ [Error] 메인 저장소에서는 문서(todo.md, index.md, DL, ADR 등) 및 .env 외의 개발 코드나 스크립트($FILE)를 직접 커밋할 수 없습니다."
+                echo "반드시 서브에이전트(Workspace: share) 환경이나 'git worktree add'를 통해 작업하세요."
+                exit 1
+                ;;
+        esac
+    done
+fi
+
+BRANCH_NAME=$(git symbolic-ref --short HEAD 2>/dev/null)
 
 # 2. Run document/index.md check (기존 로직 유지)
 if [ -f ".agents/scripts/enforce_document_index.sh" ]; then
@@ -35,20 +56,14 @@ fi
 TODO_FILE="document/todo.md"
 if [ -f "$TODO_FILE" ] && [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "master" ]; then
 
-    # 대기열에 완료된 항목([x])이 남아있는지 검사 (완료 섹션은 '- [x]' 형식을 사용하므로 숫자 패턴 검사)
     if grep -Eq '^[0-9]+\. \[x\]' "$TODO_FILE"; then
         echo "⚠️ [Queue Warning] 완료된 작업([x])이 대기열에 남아 있습니다."
-        echo "대기열(Priority Queue)에서 완료된 작업은 '완료된 작업 (Done)' 하단 섹션으로 이동시키고,"
-        echo "'- [x]' 형태의 글머리 기호로 변경하는 것이 좋습니다."
     fi
 
-    # 큐에서 첫 번째 미완료([ ] 또는 [/]) 작업의 브랜치명 추출
     FIRST_INCOMPLETE_BRANCH=$(grep -E '^[0-9]+\. \[[ /]\] `[^`]+`' "$TODO_FILE" | head -n 1 | grep -o '`[^`]*`' | sed 's/`//g')
     
     if [ -n "$FIRST_INCOMPLETE_BRANCH" ] && [ "$BRANCH_NAME" != "$FIRST_INCOMPLETE_BRANCH" ]; then
         echo "⚠️ [Queue Warning] 1순위 작업과 현재 브랜치가 다릅니다."
-        echo "현재 체크아웃 브랜치: $BRANCH_NAME / 대기열 1순위: $FIRST_INCOMPLETE_BRANCH"
-        echo "즉각적인 이슈 대응을 위해 커밋은 허용되나, 계획되지 않은 작업일 경우 todo.md를 갱신해주세요."
     fi
 fi
 

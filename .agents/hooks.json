@@ -38,5 +38,20 @@
         ]
       }
     ]
+  },
+  "subagent-workspace-enforcer": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "invoke_subagent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/enforce_subagent_workspace.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }

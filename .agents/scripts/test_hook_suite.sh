@@ -119,6 +119,7 @@ cleanup; cp "$INDEX_FILE" "$ORIG_INDEX"
 
 mkdir -p "$DOC_DIR/test_subdir"
 touch "$DOC_DIR/test_subdir/nested.md"
+printf "\n| **[[nested|document/test_subdir/nested.md]]** | \`nested\` | nested | nested |\n" >> "$INDEX_FILE"
 run_test "document 내 하위 디렉터리 존재 시 크래시 없이 정상 처리" \
   "echo '{\"terminationReason\": \"model_stop\"}' | '$HOOK'" \
   "allow"
@@ -168,12 +169,12 @@ run_test "비정상/일반 텍스트 stdin 입력 시 크래시 방지 내구성
 printf "\n📂 [카테고리 5: Git Pre-commit 훅 연동 차단/허용 검증]\n"
 touch "$DOC_DIR/test_git_unindexed.md"
 run_test "Git pre-commit: 미등록 파일 존재 시 커밋 강제 차단 (Exit Code != 0)" \
-  "'$PROJECT_ROOT/.git/hooks/pre-commit'" \
+  "'$PROJECT_ROOT/.husky/pre-commit'" \
   "git_fail"
 cleanup; cp "$INDEX_FILE" "$ORIG_INDEX"
 
 run_test "Git pre-commit: 정상 상태 시 커밋 통과 (Exit Code == 0)" \
-  "'$PROJECT_ROOT/.git/hooks/pre-commit'" \
+  "'$PROJECT_ROOT/.husky/pre-commit'" \
   "git_pass"
 
 cleanup
