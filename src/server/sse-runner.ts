@@ -8,7 +8,7 @@ export interface SSERouterOptions {
 }
 
 export function createSSERouter(
-  createServer: () => McpServer,
+  createServer: (headers: Record<string, string | string[] | undefined>) => McpServer,
   options: SSERouterOptions = {}
 ): Router {
   const router = Router();
@@ -63,7 +63,7 @@ export function createSSERouter(
   router.get("/sse", async (req, res, next) => {
     try {
       const transport = new SSEServerTransport("/mcp/message", res);
-      const mcpServer = createServer();
+      const mcpServer = createServer(req.headers);
       
       // Bind close before connect to ensure it fires if connect fails partway but socket closes
       res.on("close", () => {
