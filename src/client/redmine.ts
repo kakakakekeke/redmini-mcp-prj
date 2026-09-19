@@ -8,6 +8,12 @@ export interface GetIssuesParams {
   limit?: number;
 }
 
+export interface GetIssueDetailsParams {
+  issue_id: number;
+  include_journals?: boolean;
+  include_attachments?: boolean;
+}
+
 export class RedmineClient {
   private api: AxiosInstance;
 
@@ -22,9 +28,6 @@ export class RedmineClient {
   }
 
   async getIssues(params: GetIssuesParams) {
-    // Note: The redmine API query parameter for text search is usually 'q' or 'subject' or we can ignore if not specified.
-    // Wait, the specification says query -> `q` is not used in /issues.json, but search API uses `q`.
-    // Wait, /issues.json uses `subject` for title search. Let's map query to subject if provided, or maybe omit for now as we just need basic parameters.
     const queryParams: any = { ...params };
     if (params.query) {
        queryParams.subject = `~${params.query}`;
@@ -32,6 +35,20 @@ export class RedmineClient {
     }
 
     const { data } = await this.api.get('/issues.json', { params: queryParams });
+    return data;
+  }
+
+  async getIssueDetails(params: GetIssueDetailsParams) {
+    const includes: string[] = ['allowed_statuses'];
+    if (params.include_journals) includes.push('journals');
+    if (params.include_attachments) includes.push('attachments');
+
+    const queryParams: any = {};
+    if (includes.length > 0) {
+      queryParams.include = includes.join(',');
+    }
+
+    const { data } = await this.api.get(`/issues/${params.issue_id}.json`, { params: queryParams });
     return data;
   }
 }
