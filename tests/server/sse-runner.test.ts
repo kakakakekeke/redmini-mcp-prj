@@ -13,7 +13,7 @@ describe("SSE Transport Layer", () => {
   beforeEach(async () => {
     app = express();
     // Use short TTL for testing
-    app.use("/mcp", createSSERouter(() => new McpServer({
+    app.use("/mcp", createSSERouter((headers) => new McpServer({
       name: "test-mcp-server",
       version: "1.0.0",
     }), {
