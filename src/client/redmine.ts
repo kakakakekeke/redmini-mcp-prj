@@ -65,23 +65,6 @@ export class RedmineClient {
     }
   }
 
-  async getProjects() {
-    let offset = 0;
-    const limit = 100;
-    let allProjects: any[] = [];
-    let totalCount = 0;
-    
-    do {
-      const { data } = await this.api.get('/projects.json', { params: { limit, offset } });
-      const projects = data.projects || [];
-      allProjects = allProjects.concat(projects);
-      totalCount = data.total_count || 0;
-      offset += limit;
-    } while (offset < totalCount);
-
-    return { projects: allProjects };
-  }
-
   async getTrackers() {
     const { data } = await this.api.get('/trackers.json');
     return data;

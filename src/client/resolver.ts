@@ -1,4 +1,4 @@
-import { RedmineClient } from './redmine';
+import { RedmineClient } from './redmine.js';
 
 export class SmartNameResolver {
   private client: RedmineClient;
