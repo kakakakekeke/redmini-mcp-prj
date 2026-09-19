@@ -34,6 +34,14 @@ fi
 # 4. Queue-driven Development Enforcement (todo.md)
 TODO_FILE="document/todo.md"
 if [ -f "$TODO_FILE" ] && [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "master" ]; then
+
+    # 대기열에 완료된 항목([x])이 남아있는지 검사 (완료 섹션은 '- [x]' 형식을 사용하므로 숫자 패턴 검사)
+    if grep -Eq '^[0-9]+\. \[x\]' "$TODO_FILE"; then
+        echo "❌ [Queue Error] 완료된 작업([x])이 대기열에 남아 있습니다."
+        echo "대기열(Priority Queue)에서 완료된 작업은 '완료된 작업 (Done)' 하단 섹션으로 이동시키고,"
+        echo "'- [x]' 형태의 글머리 기호로 변경해야 합니다."
+        exit 1
+    fi
     # 큐에서 첫 번째 미완료([ ] 또는 [/]) 작업의 브랜치명 추출
     FIRST_INCOMPLETE_BRANCH=$(grep -E '^[0-9]+\. \[[ /]\] `[^`]+`' "$TODO_FILE" | head -n 1 | grep -o '`[^`]*`' | sed 's/`//g')
     
