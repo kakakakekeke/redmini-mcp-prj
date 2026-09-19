@@ -47,14 +47,26 @@ if ! echo "$out4" | grep -q '"decision": "allow"'; then
   exit 1
 fi
 
-# We are in a worktree right now, so everything inside should be allowed.
+# Check if we are currently in a worktree or main repo
+git_dir=$(git rev-parse --git-dir)
+git_common_dir=$(git rev-parse --git-common-dir)
+
+if [ "$git_dir" != "$git_common_dir" ]; then
+  # We are in a worktree
+  expected='"decision": "allow"'
+  fail_msg="FAIL: src/main.ts in worktree should be allowed"
+else
+  # We are in main repo
+  expected='"decision": "deny"'
+  fail_msg="FAIL: src/main.ts in main repo should be denied"
+fi
+
 out5=$(./.agents/scripts/enforce_worktree.sh << INPUT
 {"args": {"TargetFile": "$TOPLEVEL/src/main.ts"}}
 INPUT
 )
-if ! echo "$out5" | grep -q '"decision": "allow"'; then
-  echo "FAIL: src/main.ts in worktree should be allowed"
+if ! echo "$out5" | grep -q "$expected"; then
+  echo "$fail_msg"
   exit 1
 fi
-
 echo "All tests passed!"
