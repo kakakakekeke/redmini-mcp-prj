@@ -5,7 +5,7 @@ COMMIT_MSG_FILE=$1
 COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
 
 # 1. Conventional Commits 검사
-if ! echo "$COMMIT_MSG" | grep -Eq "^(feat|fix|docs|style|refactor|test|chore)(\([a-zA-Z0-9_-]+\))?: .+"; then
+if ! echo "$COMMIT_MSG" | grep -Eq "^(feat|fix|docs|style|refactor|test|chore)\([a-zA-Z0-9_-]+\): .+"; then
     echo "❌ [Error] 커밋 메시지 규칙 위반."
     echo "반드시 '타입(스코프): 제목' 형식을 따라야 합니다. (예: feat(auth): add login)"
     echo "현재 메시지 첫 줄: $(head -n 1 "$COMMIT_MSG_FILE")"
