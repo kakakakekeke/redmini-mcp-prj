@@ -17,7 +17,7 @@ tags:
 > 2. **신규 등록 시 우선순위 검토**: 새로운 할 일을 추가할 때 무조건 맨 밑에 추가하지 마십시오. 작업의 기술적 종속성(Dependency)과 비즈니스 중요도를 분석하여 **가장 적절한 순서(위치)에 삽입**해야 합니다.
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
-(현재 대기열에 남은 작업이 없습니다. 모든 MVP 및 가이드 문서 작업이 완료되었습니다.)
+- [ ] `feature/tool-descriptions` : MCP 도구 및 Zod 스키마에 자연어 설명(description) 보강
 
 ## ✅ 완료된 작업 (Done)
 - [x] `docs/setup-guide` : Claude Desktop 및 Cursor IDE 연동 가이드 (setup_and_deployment.md) 작성
