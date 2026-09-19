@@ -118,3 +118,4 @@ Thumbs.db
 # Agent generated artifacts/scratch
 scratch/
 brain/
+.worktrees/
