@@ -32,14 +32,19 @@ export class RedmineClient {
   }
 
   async getIssues(params: GetIssuesParams) {
-    const queryParams: any = { ...params };
+    const queryParams: Record<string, unknown> = { ...params };
     if (params.query) {
        queryParams.subject = `~${params.query}`;
        delete queryParams.query;
     }
 
-    const { data } = await this.api.get('/issues.json', { params: queryParams });
-    return data;
+    try {
+      const { data } = await this.api.get('/issues.json', { params: queryParams });
+      return data;
+    } catch (error) {
+      // Re-throw or handle as per caller requirement
+      throw error;
+    }
   }
 
   async getIssueDetails(params: GetIssueDetailsParams) {
@@ -47,25 +52,92 @@ export class RedmineClient {
     if (params.include_journals) includes.push('journals');
     if (params.include_attachments) includes.push('attachments');
 
-    const queryParams: any = {};
+    const queryParams: Record<string, unknown> = {};
     if (includes.length > 0) {
       queryParams.include = includes.join(',');
     }
 
-    const { data } = await this.api.get(`/issues/${params.issue_id}.json`, { params: queryParams });
+    try {
+      const { data } = await this.api.get(`/issues/${params.issue_id}.json`, { params: queryParams });
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getProjects() {
+    let offset = 0;
+    const limit = 100;
+    let allProjects: any[] = [];
+    let totalCount = 0;
+    
+    do {
+      const { data } = await this.api.get('/projects.json', { params: { limit, offset } });
+      const projects = data.projects || [];
+      allProjects = allProjects.concat(projects);
+      totalCount = data.total_count || 0;
+      offset += limit;
+    } while (offset < totalCount);
+
+    return { projects: allProjects };
+  }
+
+  async getTrackers() {
+    const { data } = await this.api.get('/trackers.json');
     return data;
   }
 
   async getProjects(params?: GetProjectsParams) {
+    let offset = 0;
+    const limit = 100;
+    let allProjects: any[] = [];
+    let totalCount = 0;
+
     const queryParams: any = {
       include: 'trackers,issue_categories,enabled_modules',
+      limit,
     };
     
     if (params?.include_archived) {
       queryParams.status = '*';
     }
+    
+    do {
+      queryParams.offset = offset;
+      const { data } = await this.api.get('/projects.json', { params: queryParams });
+      const projects = data.projects || [];
+      allProjects = allProjects.concat(projects);
+      totalCount = data.total_count || 0;
+      offset += limit;
+    } while (offset < totalCount);
 
-    const { data } = await this.api.get('/projects.json', { params: queryParams });
+    return { projects: allProjects };
+  }
+
+  async getStatuses() {
+    const { data } = await this.api.get('/issue_statuses.json');
     return data;
+  }
+
+  async getPriorities() {
+    const { data } = await this.api.get('/enumerations/issue_priorities.json');
+    return data;
+  }
+
+  async getUsers() {
+    let offset = 0;
+    const limit = 100;
+    let allUsers: any[] = [];
+    let totalCount = 0;
+    
+    do {
+      const { data } = await this.api.get('/users.json', { params: { limit, offset } });
+      const users = data.users || [];
+      allUsers = allUsers.concat(users);
+      totalCount = data.total_count || 0;
+      offset += limit;
+    } while (offset < totalCount);
+
+    return { users: allUsers };
   }
 }
