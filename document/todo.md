@@ -21,6 +21,7 @@ tags:
 2. [ ] `docs/setup-guide` : Claude Desktop 및 Cursor IDE 연동 가이드 (setup_and_deployment.md) 작성
 
 ## ✅ 완료된 작업 (Done)
+- [x] `doc-enforce-decision-logging` : 에이전트 자발적 의사결정 문서화 강제 규칙 추가 (AGENTS.md, vibe_tdd_sop.md)
 - [x] `fix/mitigate-infinite-loop` : 서브에이전트 무한 루프 방지를 위한 SOP 업데이트
 - [x] `feature/auth-middleware` : 환경변수(REDMINE_API_KEY, REDMINE_URL) 로드 및 인증 미들웨어(Header 위임) 구현
 - [x] `feature/http-sse-layer` : Express 기반 HTTP(SSE) 전송 계층 연동 및 라우터 셋업
