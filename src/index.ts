@@ -16,23 +16,39 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
 
   const client = getAuthClient(headers);
 
-  server.tool("get_projects", getProjectsSchema.shape, async (args) => {
-    const result = await getProjectsHandler(args as any, client);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  });
+  server.tool(
+    "get_projects",
+    "Redmine 프로젝트 목록을 조회합니다. 보관된 프로젝트 포함 여부를 지정할 수 있습니다.",
+    getProjectsSchema.shape,
+    async (args) => {
+      const result = await getProjectsHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
   
-  server.tool("get_issue_details", getIssueDetailsSchema.shape, async (args) => {
-    const result = await getIssueDetailsHandler(args as any, client);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  });
+  server.tool(
+    "get_issue_details",
+    "지정한 일감 ID의 상세 정보(상태, 담당자, 설명, 변경 이력 및 첨부파일)를 조회합니다.",
+    getIssueDetailsSchema.shape,
+    async (args) => {
+      const result = await getIssueDetailsHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
   
-  server.tool("search_issues", searchIssuesSchema.shape, async (args) => {
-    const result = await searchIssuesHandler(args as any, client);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  });
+  server.tool(
+    "search_issues",
+    "키워드, 프로젝트, 상태(이름 또는 ID), 트래커(이름 또는 ID), 담당자 등 다양한 조건으로 일감을 검색합니다.",
+    searchIssuesSchema.shape,
+    async (args) => {
+      const result = await searchIssuesHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
 
   server.tool(
     "ping",
+    "Redmine MCP 서버의 연결 상태 및 헬스체크를 수행합니다.",
     {},
     async () => {
       return {

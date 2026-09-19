@@ -3,14 +3,14 @@ import { RedmineClient } from "../client/redmine.js";
 import { SmartNameResolver } from "../client/resolver.js";
 
 export const searchIssuesSchema = z.object({
-  project_id: z.string().regex(/^[a-z0-9\-]+$/, "Invalid project_id").optional(),
-  status_id: z.string().regex(/^(\d+|open|closed|\*)$/, "Invalid status_id").optional(),
-  status: z.string().optional(),
-  tracker_id: z.string().regex(/^\d+$/, "Invalid tracker_id").optional(),
-  tracker: z.string().optional(),
-  assigned_to_id: z.string().regex(/^(\d+|me)$/, "Invalid assigned_to_id").optional(),
-  query: z.string().max(100, "Query too long").optional(),
-  limit: z.number().int().min(1).max(50, "Limit must be at most 50").default(10),
+  project_id: z.string().regex(/^[a-z0-9\-]+$/, "Invalid project_id").optional().describe("프로젝트 식별자(ID 또는 슬러그 identifier)"),
+  status_id: z.string().regex(/^(\d+|open|closed|\*)$/, "Invalid status_id").optional().describe("일감 상태의 숫자 ID 또는 'open', 'closed', '*'"),
+  status: z.string().optional().describe("일감 상태명 (예: '신규', '진행중', '해결'). Smart Name Resolver가 ID로 자동 변환"),
+  tracker_id: z.string().regex(/^\d+$/, "Invalid tracker_id").optional().describe("트래커(유형) 숫자 ID"),
+  tracker: z.string().optional().describe("트래커 이름 (예: '결함', '기능', '지원'). Smart Name Resolver가 ID로 자동 변환"),
+  assigned_to_id: z.string().regex(/^(\d+|me)$/, "Invalid assigned_to_id").optional().describe("담당자 사용자 ID 또는 현재 사용자 'me'"),
+  query: z.string().max(100, "Query too long").optional().describe("제목 또는 본문 검색 키워드 (최대 100자)"),
+  limit: z.number().int().min(1).max(50, "Limit must be at most 50").default(10).describe("가져올 최대 일감 수 (1~50, 기본값: 10)"),
 });
 
 export type SearchIssuesArgs = z.infer<typeof searchIssuesSchema>;
