@@ -1,0 +1,27 @@
+{
+  "document-index-enforcer": {
+    "enabled": true,
+    "Stop": [
+      {
+        "type": "command",
+        "command": "scripts/enforce_document_index.sh",
+        "timeout": 5
+      }
+    ]
+  },
+  "vibe-tdd-typecheck": {
+    "enabled": true,
+    "PostToolUse": [
+      {
+        "matcher": "write_to_file|replace_file_content",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/typecheck.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
