@@ -36,6 +36,7 @@ status: active
 | **[[decision_log_template]]** | `템플릿`, `DL`, `결정로그` | • 새로운 실무 결정 로그(DL) 문서 작성 시 | 일상적 운영/실무 결정 로그 템플릿 |
 | **[[vibe_tdd_sop]]** | `SOP`, `TDD`, `바이브코딩`, `프로세스` | • Vibe TDD 기능 개발 및 테스트 사이클 진행 시 | Vibe TDD 워크플로우를 위한 표준 운영 절차서 |
 | **[[0001-initial-architecture]]** | `ADR`, `아키텍처결정` | • 시스템 아키텍처, 굵직한 기술 스택 변경 시 | ADR-0001: Redmine MCP 서버 초기 아키텍처 결정 |
+| **[[0002-test-architecture\|document/adr/0002-test-architecture.md]]** | `ADR`, `테스트`, `아키텍처`, `TDD`, `Mocking`, `MSW` | • 단위/통합/E2E 테스트 계층 구분 확인 시<br>• 모킹(Mock) 전략 및 피라미드 구조 참조 시 | ADR-0002: 테스트 피라미드 및 Mocking 전략 정의 |
 | **[[DL-0001-vitest]]** | `DL`, `결정로그`, `운영`, `실무결정` | • 코딩 컨벤션, 라이브러리 교체 등 실무적 결정 기록 시 | DL-0001: TDD 테스트 러너로 Vitest 채택 |
 | **[[todo]]** | `todo`, `할일`, `태스크`, `진행현황` | • 다음 개발 목표(Task)를 확인하거나 완료 처리할 때 | 전체 프로젝트의 진행 현황 및 TO-DO 리스트 |
 | **[[integration_test_scenarios]]** | `테스트`, `시나리오`, `UAT`, `E2E` | • 서버 구동 후 실 환경 연동 및 통합 테스트 수행 시 | 종단간(E2E) 통합 테스트 및 인수 테스트(UAT) 시나리오 |
