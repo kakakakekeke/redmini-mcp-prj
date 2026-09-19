@@ -1,0 +1,40 @@
+#!/bin/sh
+# Git commit-msg hook to enforce conventions and scope impact review.
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# 1. Conventional Commits 검사
+if ! echo "$COMMIT_MSG" | grep -Eq "^(feat|fix|docs|style|refactor|test|chore)(\([a-zA-Z0-9_-]+\))?: .+"; then
+    echo "❌ [Error] 커밋 메시지 규칙 위반."
+    echo "반드시 '타입(스코프): 제목' 형식을 따라야 합니다. (예: feat(auth): add login)"
+    echo "현재 메시지 첫 줄: $(head -n 1 "$COMMIT_MSG_FILE")"
+    exit 1
+fi
+
+# 2. Scope 영향도 검토 (Core Files)
+# 코어 파일 목록: package.json, 설정 파일, 인덱스 파일 등 프로젝트 전역에 영향을 주는 파일
+CORE_FILES="package.json tsconfig.json document/index.md src/index.ts .agents/ AGENTS.md"
+HAS_CORE_MODIFICATION=0
+
+# --cached 로 스테이징된 파일 목록을 가져와서 코어 파일이 수정되었는지 확인
+for file in $(git diff --cached --name-only); do
+    for core in $CORE_FILES; do
+        if echo "$file" | grep -q "^$core"; then
+            HAS_CORE_MODIFICATION=1
+            break 2
+        fi
+    done
+done
+
+# 코어 파일이 수정되었는데 [Impact-Reviewed] 태그가 커밋 메시지 내에 없다면 차단
+if [ $HAS_CORE_MODIFICATION -eq 1 ]; then
+    if ! echo "$COMMIT_MSG" | grep -q "\[Impact-Reviewed\]"; then
+        echo "⚠️ [Warning] 코어 파일 또는 글로벌 설정 파일이 수정되었습니다."
+        echo "수정된 파일이 다른 도메인이나 기능에 사이드 이펙트를 주지 않는지 검토한 후,"
+        echo "커밋 메시지 본문에 '[Impact-Reviewed]' 태그를 포함하여 다시 커밋해주세요."
+        exit 1
+    fi
+fi
+
+echo "✅ Commit-msg 검증을 통과했습니다."

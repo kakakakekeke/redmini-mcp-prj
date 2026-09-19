@@ -23,20 +23,5 @@
         ]
       }
     ]
-  },
-  "commit-workflow-enforcer": {
-    "enabled": true,
-    "PreToolUse": [
-      {
-        "matcher": "run_command",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "./.agents/scripts/enforce_commit_workflow.sh \"{{CommandLine}}\"",
-            "timeout": 60
-          }
-        ]
-      }
-    ]
   }
 }
