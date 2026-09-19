@@ -24,6 +24,8 @@ tags:
 - [ ] Claude Desktop 및 Cursor IDE 연동 가이드 (`setup_and_deployment.md`) 작성
 
 ## ✅ 완료된 작업 (Done)
+- [x] 다중 에이전트 동시 작업용 Git Worktree SOP 수립 및 스킬(`.agents/skills/git-workflow`) 등록
+- [x] Husky 도입 및 Git Hook(`pre-commit`, `commit-msg`) 고도화 (main 브랜치 보호, 영향도 리뷰 태그 강제)
 - [x] 오픈소스 벤치마킹 및 라이선스, 아키텍처 리서치 (`redmine_mcp_research.md`)
 - [x] 조회 전용 1단계 MVP 도구 명세 확정 (`mcp_tools_spec.md`)
 - [x] 다중 사용자 및 이중 전송 계층 아키텍처 설계 (`architecture_design.md`)
