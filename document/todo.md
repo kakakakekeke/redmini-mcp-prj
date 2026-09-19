@@ -11,17 +11,18 @@ tags:
 
 > **안내**: 개발이 어느 정도 완료되어 자체 Redmine 인스턴스와 연동이 가능해지면, 이 문서의 할 일들은 실제 Redmine 일감으로 이관하여 추적(Dogfooding)합니다.
 
-## 🏃 진행 중인 작업 (In Progress)
-- [ ] `search_issues` 도구 TDD 구현 (Redmine API 연동 및 Zod 스키마 검증)
+## ⏳ 할 일 대기열 (Priority Queue)
+> **주의**: 작업은 반드시 위에서부터 순서대로 진행해야 하며, 할 일의 첫 머리에는 생성할 작업 브랜치명을 백틱(`` ` ``)으로 감싸 명시해야 합니다.
 
-## ⏳ 대기 중인 작업 (To Do)
-- [ ] `get_issue_details` 도구 TDD 구현
-- [ ] `get_projects` 도구 TDD 구현
-- [ ] Smart Name Resolver (상태, 트래커 이름 -> ID 매핑) 로직 구현
-- [ ] Express 기반 HTTP(SSE) 전송 계층 연동 및 라우터 셋업
-- [ ] 환경변수(`REDMINE_API_KEY`, `REDMINE_URL`) 로드 및 인증 미들웨어(Header 위임) 구현
-- [ ] Redmine 연동 엔드투엔드(E2E) 통합 테스트 수행
-- [ ] Claude Desktop 및 Cursor IDE 연동 가이드 (`setup_and_deployment.md`) 작성
+1. [ ] `chore/setup-todo-queue` : todo.md를 Queue 형태로 리팩토링하고 pre-commit에 큐 강제 로직 추가
+2. [ ] `feature/search-issues` : search_issues 도구 TDD 구현 (Redmine API 연동 및 Zod 스키마 검증)
+2. [ ] `feature/get-issue-details` : get_issue_details 도구 TDD 구현
+3. [ ] `feature/get-projects` : get_projects 도구 TDD 구현
+4. [ ] `feature/smart-name-resolver` : Smart Name Resolver (상태, 트래커 이름 -> ID 매핑) 로직 구현
+5. [ ] `feature/http-sse-layer` : Express 기반 HTTP(SSE) 전송 계층 연동 및 라우터 셋업
+6. [ ] `feature/auth-middleware` : 환경변수(REDMINE_API_KEY, REDMINE_URL) 로드 및 인증 미들웨어(Header 위임) 구현
+7. [ ] `test/e2e-integration` : Redmine 연동 엔드투엔드(E2E) 통합 테스트 수행
+8. [ ] `docs/setup-guide` : Claude Desktop 및 Cursor IDE 연동 가이드 (setup_and_deployment.md) 작성
 
 ## ✅ 완료된 작업 (Done)
 - [x] 다중 에이전트 동시 작업용 Git Worktree SOP 수립 및 스킬(`.agents/skills/git-workflow`) 등록

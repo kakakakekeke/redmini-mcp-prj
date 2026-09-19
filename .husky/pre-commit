@@ -31,4 +31,22 @@ if grep -q '"test":' package.json; then
     fi
 fi
 
+# 4. Queue-driven Development Enforcement (todo.md)
+TODO_FILE="document/todo.md"
+if [ -f "$TODO_FILE" ] && [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "master" ]; then
+    # 큐에서 첫 번째 미완료([ ] 또는 [/]) 작업의 브랜치명 추출
+    FIRST_INCOMPLETE_BRANCH=$(grep -E '^[0-9]+\. \[[ /]\] `[^`]+`' "$TODO_FILE" | head -n 1 | grep -o '`[^`]*`' | sed 's/`//g')
+    
+    if [ -n "$FIRST_INCOMPLETE_BRANCH" ]; then
+        if [ "$BRANCH_NAME" != "$FIRST_INCOMPLETE_BRANCH" ]; then
+            echo "❌ [Queue Error] 작업 순서 위반 또는 계획되지 않은 작업입니다."
+            echo "현재 체크아웃 브랜치: $BRANCH_NAME"
+            echo "대기열 1순위 작업: $FIRST_INCOMPLETE_BRANCH"
+            echo "document/todo.md 의 대기열(Priority Queue) 순서를 엄격히 지켜주세요."
+            echo "작업을 하려면 todo.md에 브랜치명을 1순위로 등록(계획)하거나, 앞선 작업을 먼저 완료([x]) 처리해야 합니다."
+            exit 1
+        fi
+    fi
+fi
+
 echo "✅ Pre-commit 검증을 통과했습니다."
