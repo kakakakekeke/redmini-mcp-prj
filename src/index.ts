@@ -2,26 +2,41 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import express from "express";
 import { createSSERouter } from "./server/sse-runner.js";
+import { getAuthClient } from "./middleware/auth.js";
+import { getProjectsHandler, getProjectsSchema } from "./tools/get_projects.js";
+import { getIssueDetailsHandler, getIssueDetailsSchema } from "./tools/get_issue_details.js";
+import { searchIssuesHandler, searchIssuesSchema } from "./tools/search_issues.js";
 
 // Factory function to create a new MCP Server instance per connection
-export function createRedmineMcpServer() {
+export function createRedmineMcpServer(headers: Record<string, string | string[] | undefined> = {}) {
   const server = new McpServer({
     name: "redmine-mcp-server",
     version: "1.0.0",
   });
 
-  // A simple Ping tool for health check
+  const client = getAuthClient(headers);
+
+  server.tool("get_projects", getProjectsSchema.shape, async (args) => {
+    const result = await getProjectsHandler(args as any, client);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  });
+  
+  server.tool("get_issue_details", getIssueDetailsSchema.shape, async (args) => {
+    const result = await getIssueDetailsHandler(args as any, client);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  });
+  
+  server.tool("search_issues", searchIssuesSchema.shape, async (args) => {
+    const result = await searchIssuesHandler(args as any, client);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  });
+
   server.tool(
     "ping",
-    {}, // No parameters required
+    {},
     async () => {
       return {
-        content: [
-          {
-            type: "text",
-            text: "pong! MCP Server is running successfully.",
-          },
-        ],
+        content: [{ type: "text", text: "pong! MCP Server is running successfully." }],
       };
     }
   );
@@ -41,14 +56,14 @@ async function main() {
       console.error(`Redmine MCP Server is running on SSE mode at http://localhost:${port}`);
     });
   } else {
-    const server = createRedmineMcpServer();
+    // For stdio, we don't have request headers, so it will fall back to process.env.REDMINE_API_KEY
+    const server = createRedmineMcpServer({});
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error("Redmine MCP Server is running on stdio!");
   }
 }
 
-// Only run main if this file is executed directly (not imported in tests)
 import { fileURLToPath } from "url";
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((err) => {
