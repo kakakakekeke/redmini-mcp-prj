@@ -18,7 +18,7 @@ tags:
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
 1. [x] `feature/search-issues` : search_issues 도구 TDD 구현 (Redmine API 연동 및 Zod 스키마 검증)
-2. [ ] `feature/get-issue-details` : get_issue_details 도구 TDD 구현
+2. [x] `feature/get-issue-details` : get_issue_details 도구 TDD 구현
 3. [ ] `feature/get-projects` : get_projects 도구 TDD 구현
 4. [ ] `feature/smart-name-resolver` : Smart Name Resolver (상태, 트래커 이름 -> ID 매핑) 로직 구현
 5. [ ] `feature/http-sse-layer` : Express 기반 HTTP(SSE) 전송 계층 연동 및 라우터 셋업

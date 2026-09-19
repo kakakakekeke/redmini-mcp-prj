@@ -62,15 +62,15 @@ tags:
 - **명령어**: 
   ```bash
   # 저장소 루트에서 실행
-  git worktree add ../<프로젝트명>-<브랜치명> -b <브랜치명>
+  git worktree add .worktrees/<브랜치명> -b <브랜치명>
   ```
-  *(예: `git worktree add ../redmini-mcp-prj-feature-login -b feature/login`)*
+  *(예: `git worktree add .worktrees/feature-login -b feature/login`)*
 - **행동**: 새로운 에이전트를 스폰할 때, 해당 에이전트가 작업할 디렉토리로 생성된 Worktree 경로를 지정합니다.
 
 ### 단계 2: Worktree 환경에서 작업 수행
 - **명령어**:
   ```bash
-  cd ../<프로젝트명>-<브랜치명>
+  cd .worktrees/<브랜치명>
   # 이후 의존성 설치(필요 시) 및 작업 수행
   npm install
   ```
@@ -92,7 +92,7 @@ tags:
   ```bash
   # 본래 저장소 디렉토리로 이동
   cd <본래_저장소_경로>
-  git worktree remove ../<프로젝트명>-<브랜치명>
+  git worktree remove .worktrees/<브랜치명>
   git branch -d <브랜치명>
   ```
 - **검증**: `git worktree list`를 실행하여 정리된 목록을 확인합니다.
