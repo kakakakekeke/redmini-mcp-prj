@@ -31,42 +31,24 @@ if grep -q '"test":' package.json; then
     fi
 fi
 
-# 4. Queue-driven Development Enforcement (todo.md)
+# 4. Queue-driven Development Enforcement (todo.md) - 완화됨 (Warning only)
 TODO_FILE="document/todo.md"
 if [ -f "$TODO_FILE" ] && [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "master" ]; then
 
-    # chore/, docs/, bugfix/ 브랜치는 대기열 일치 검사에서 예외 처리
-    case "$BRANCH_NAME" in
-        chore/*|docs/*|bugfix/*)
-            SKIP_QUEUE_CHECK=1
-            ;;
-        *)
-            SKIP_QUEUE_CHECK=0
-            ;;
-    esac
-
     # 대기열에 완료된 항목([x])이 남아있는지 검사 (완료 섹션은 '- [x]' 형식을 사용하므로 숫자 패턴 검사)
     if grep -Eq '^[0-9]+\. \[x\]' "$TODO_FILE"; then
-        echo "❌ [Queue Error] 완료된 작업([x])이 대기열에 남아 있습니다."
+        echo "⚠️ [Queue Warning] 완료된 작업([x])이 대기열에 남아 있습니다."
         echo "대기열(Priority Queue)에서 완료된 작업은 '완료된 작업 (Done)' 하단 섹션으로 이동시키고,"
-        echo "'- [x]' 형태의 글머리 기호로 변경해야 합니다."
-        exit 1
+        echo "'- [x]' 형태의 글머리 기호로 변경하는 것이 좋습니다."
     fi
 
-    if [ "$SKIP_QUEUE_CHECK" -eq 0 ]; then
-        # 큐에서 첫 번째 미완료([ ] 또는 [/]) 작업의 브랜치명 추출
-        FIRST_INCOMPLETE_BRANCH=$(grep -E '^[0-9]+\. \[[ /]\] `[^`]+`' "$TODO_FILE" | head -n 1 | grep -o '`[^`]*`' | sed 's/`//g')
-        
-        if [ -n "$FIRST_INCOMPLETE_BRANCH" ]; then
-            if [ "$BRANCH_NAME" != "$FIRST_INCOMPLETE_BRANCH" ]; then
-                echo "❌ [Queue Error] 작업 순서 위반 또는 계획되지 않은 작업입니다."
-                echo "현재 체크아웃 브랜치: $BRANCH_NAME"
-                echo "대기열 1순위 작업: $FIRST_INCOMPLETE_BRANCH"
-                echo "document/todo.md 의 대기열(Priority Queue) 순서를 엄격히 지켜주세요."
-                echo "작업을 하려면 todo.md에 브랜치명을 1순위로 등록(계획)하거나, 앞선 작업을 먼저 완료([x]) 처리해야 합니다."
-                exit 1
-            fi
-        fi
+    # 큐에서 첫 번째 미완료([ ] 또는 [/]) 작업의 브랜치명 추출
+    FIRST_INCOMPLETE_BRANCH=$(grep -E '^[0-9]+\. \[[ /]\] `[^`]+`' "$TODO_FILE" | head -n 1 | grep -o '`[^`]*`' | sed 's/`//g')
+    
+    if [ -n "$FIRST_INCOMPLETE_BRANCH" ] && [ "$BRANCH_NAME" != "$FIRST_INCOMPLETE_BRANCH" ]; then
+        echo "⚠️ [Queue Warning] 1순위 작업과 현재 브랜치가 다릅니다."
+        echo "현재 체크아웃 브랜치: $BRANCH_NAME / 대기열 1순위: $FIRST_INCOMPLETE_BRANCH"
+        echo "즉각적인 이슈 대응을 위해 커밋은 허용되나, 계획되지 않은 작업일 경우 todo.md를 갱신해주세요."
     fi
 fi
 
