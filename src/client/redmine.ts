@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 export interface GetIssuesParams {
   project_id?: string;
   status_id?: string;
+  tracker_id?: string;
   assigned_to_id?: string;
   query?: string;
   limit?: number;

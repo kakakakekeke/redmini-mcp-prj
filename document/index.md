@@ -39,6 +39,7 @@ status: active
 | **[[0002-test-architecture\|document/adr/0002-test-architecture.md]]** | `ADR`, `테스트`, `아키텍처`, `TDD`, `Mocking`, `MSW` | • 단위/통합/E2E 테스트 계층 구분 확인 시<br>• 모킹(Mock) 전략 및 피라미드 구조 참조 시 | ADR-0002: 테스트 피라미드 및 Mocking 전략 정의 |
 | **[[DL-0001-vitest]]** | `DL`, `결정로그`, `운영`, `실무결정` | • 코딩 컨벤션, 라이브러리 교체 등 실무적 결정 기록 시 | DL-0001: TDD 테스트 러너로 Vitest 채택 |
 | **[[DL-0002-boost-agent-workflow|document/decision_log/DL-0002-boost-agent-workflow.md]]** | `DL`, `boost`, `다중에이전트`, `무한루프`, `husky` | • /boost 모드 성과 확인 및 훅(Hook) 정책 완화 배경 참조 시 | DL-0002: /boost 모드 성과 및 다중 에이전트 워크플로우 결정 |
+| **[[DL-0003-eventsource|document/decision_log/DL-0003-eventsource.md]]** | `DL`, `테스트`, `SSE`, `eventsource` | • E2E 테스트에서 SSEClientTransport 구성 관련 배경 참조 시 | DL-0003: E2E 테스트 시 SSE 동작을 위한 eventsource 도입 |
 | **[[todo]]** | `todo`, `할일`, `태스크`, `진행현황` | • 다음 개발 목표(Task)를 확인하거나 완료 처리할 때 | 전체 프로젝트의 진행 현황 및 TO-DO 리스트 |
 | **[[integration_test_scenarios]]** | `테스트`, `시나리오`, `UAT`, `E2E` | • 서버 구동 후 실 환경 연동 및 통합 테스트 수행 시 | 종단간(E2E) 통합 테스트 및 인수 테스트(UAT) 시나리오 |
 | **[[git_workflow_sop\|document/sop/git_workflow_sop.md]]** | `SOP`, `git`, `워크플로우`, `브랜치`, `worktree`, `멀티에이전트` | • 협업, 브랜치 생성, 커밋 작성, 워크트리 구성 시 | 브랜치 관리, 커밋 메시지 컨벤션 및 다중 에이전트 동시 작업을 위한 Git Worktree 절차서 |

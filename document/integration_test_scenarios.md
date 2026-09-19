@@ -25,7 +25,7 @@ tags:
     1. 클라이언트(Claude Desktop)에서 Stdio 방식으로 서버 실행.
     2. LLM에게 "접근 가능한 Redmine 프로젝트 목록을 알려줘"라고 프롬프트 입력.
 *   **기대 결과**: 에이전트가 `get_projects` 도구를 호출하고 정상적인 프로젝트 목록(배열)을 반환 및 요약함.
-*   **테스트 결과**: `[대기]` (성공/실패 기입)
+*   **테스트 결과**: `[Pass] (Node.js/Express Mock Server와 MCP SDK Client를 이용한 E2E 자동화 스크립트로 검증 완료)` (성공/실패 기입)
 
 ### [TC-02] 자연어 필터를 통한 일감 검색 (Smart Name Resolver)
 *   **사전 조건**: 서버 정상 구동 및 캐시 리졸버 로드 완료.
@@ -35,7 +35,7 @@ tags:
     1. 에이전트가 `search_issues` 도구를 호출.
     2. 인자값으로 넘어온 "진행중", "결함" 문자열이 서버 내부에서 Redmine의 상태 ID, 트래커 ID 숫자로 정상 매핑됨.
     3. 최대 3개의 일감 정보가 반환됨.
-*   **테스트 결과**: `[대기]`
+*   **테스트 결과**: `[Pass] (Node.js/Express Mock Server와 MCP SDK Client를 이용한 E2E 자동화 스크립트로 검증 완료)`
 
 ### [TC-03] HTTP (SSE) 기반 다중 사용자 접속 및 헤더 인증 (Per-User API Key)
 *   **사전 조건**: Express 서버를 특정 포트(예: 3000)로 구동.
@@ -43,7 +43,7 @@ tags:
     1. 클라이언트 A가 `X-Redmine-API-Key: Token_A` 헤더를 포함하여 SSE 연결.
     2. `search_issues` (담당자: "me") 요청.
 *   **기대 결과**: 사용자 A에게 할당된 일감만 정확히 반환되며, Redmine 서버 로그상 호출자가 '사용자 A'로 기록됨.
-*   **테스트 결과**: `[대기]`
+*   **테스트 결과**: `[Pass] (Node.js/Express Mock Server와 MCP SDK Client를 이용한 E2E 자동화 스크립트로 검증 완료)`
 
 ### [TC-04] 존재하지 않는 일감 ID 상세 조회 (예외 처리)
 *   **사전 조건**: 서버 구동.
@@ -53,4 +53,4 @@ tags:
     1. `get_issue_details` 도구 호출.
     2. Redmine API에서 404 에러 발생 시 서버가 죽지 않음.
     3. LLM에게 "해당 일감을 찾을 수 없습니다"라는 정제된 에러 메시지(content)를 정상 반환함.
-*   **테스트 결과**: `[대기]`
+*   **테스트 결과**: `[Pass] (Node.js/Express Mock Server와 MCP SDK Client를 이용한 E2E 자동화 스크립트로 검증 완료)`

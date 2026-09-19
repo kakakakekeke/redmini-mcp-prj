@@ -21,8 +21,10 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@types/eventsource": "^1.1.15",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.1",
+    "eventsource": "^5.1.1",
     "husky": "^9.1.7",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
