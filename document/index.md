@@ -42,7 +42,8 @@ status: active
 | **[[DL-0003-eventsource|document/decision_log/DL-0003-eventsource.md]]** | `DL`, `테스트`, `SSE`, `eventsource` | • E2E 테스트에서 SSEClientTransport 구성 관련 배경 참조 시 | DL-0003: E2E 테스트 시 SSE 동작을 위한 eventsource 도입 |
 | **[[todo]]** | `todo`, `할일`, `태스크`, `진행현황` | • 다음 개발 목표(Task)를 확인하거나 완료 처리할 때 | 전체 프로젝트의 진행 현황 및 TO-DO 리스트 |
 | **[[integration_test_scenarios]]** | `테스트`, `시나리오`, `UAT`, `E2E` | • 서버 구동 후 실 환경 연동 및 통합 테스트 수행 시 | 종단간(E2E) 통합 테스트 및 인수 테스트(UAT) 시나리오 |
-| **[[git_workflow_sop\|document/sop/git_workflow_sop.md]]** | `SOP`, `git`, `워크플로우`, `브랜치`, `worktree`, `멀티에이전트` | • 협업, 브랜치 생성, 커밋 작성, 워크트리 구성 시 | 브랜치 관리, 커밋 메시지 컨벤션 및 다중 에이전트 동시 작업을 위한 Git Worktree 절차서 |
+| **[[setup_and_deployment|document/setup_and_deployment.md]]** | `설정`, `배포`, `연동`, `setup`, `deployment`, `claude`, `cursor`, `stdio`, `sse`, `환경변수` | • Claude Desktop 또는 Cursor IDE에 MCP 서버 연동 설정 시<br>• Stdio 또는 SSE(HTTP) 전송 모드로 서버 배포 시<br>• Redmine REST API 활성화 및 API Key 발급 방법 확인 시 | Claude Desktop 및 Cursor IDE 연동 가이드, 배포 모드(Stdio/SSE) 설정 및 문제 해결 |
+| **[[git_workflow_sop|document/sop/git_workflow_sop.md]]** | `SOP`, `git`, `워크플로우`, `브랜치`, `worktree`, `멀티에이전트` | • 협업, 브랜치 생성, 커밋 작성, 워크트리 구성 시 | 브랜치 관리, 커밋 메시지 컨벤션 및 다중 에이전트 동시 작업을 위한 Git Worktree 절차서 |
 
 ---
 
@@ -50,7 +51,7 @@ status: active
 
 새로운 문서가 작성되면 위 색인표에 행을 추가하고 등록하십시오:
 
-* `document/setup_and_deployment.md`: 클라이언트(Claude Desktop/Cursor) 연동 설정 및 실행 가이드
+* (현재 예정된 문서가 모두 작성되었습니다.)
 
 ---
 
