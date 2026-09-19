@@ -14,6 +14,10 @@ export interface GetIssueDetailsParams {
   include_attachments?: boolean;
 }
 
+export interface GetProjectsParams {
+  include_archived?: boolean;
+}
+
 export class RedmineClient {
   private api: AxiosInstance;
 
@@ -49,6 +53,19 @@ export class RedmineClient {
     }
 
     const { data } = await this.api.get(`/issues/${params.issue_id}.json`, { params: queryParams });
+    return data;
+  }
+
+  async getProjects(params?: GetProjectsParams) {
+    const queryParams: any = {
+      include: 'trackers,issue_categories,enabled_modules',
+    };
+    
+    if (params?.include_archived) {
+      queryParams.status = '*';
+    }
+
+    const { data } = await this.api.get('/projects.json', { params: queryParams });
     return data;
   }
 }
