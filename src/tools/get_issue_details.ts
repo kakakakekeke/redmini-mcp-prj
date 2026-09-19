@@ -2,9 +2,9 @@ import { z } from 'zod';
 import { RedmineClient } from '../client/redmine.js';
 
 export const getIssueDetailsSchema = z.object({
-  issue_id: z.number().int('Invalid issue_id').positive('Invalid issue_id'),
-  include_journals: z.boolean().default(true),
-  include_attachments: z.boolean().default(false),
+  issue_id: z.number().int('Invalid issue_id').positive('Invalid issue_id').describe("조회할 Redmine 일감(이슈)의 고유 숫자 ID"),
+  include_journals: z.boolean().default(true).describe("일감의 변경 이력 및 댓글(Journals) 포함 여부 (기본값: true)"),
+  include_attachments: z.boolean().default(false).describe("첨부 파일 목록 및 다운로드 URL 포함 여부 (기본값: false)"),
 });
 
 export type GetIssueDetailsArgs = z.infer<typeof getIssueDetailsSchema>;
