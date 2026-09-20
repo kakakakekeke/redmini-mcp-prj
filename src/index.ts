@@ -10,6 +10,7 @@ import { updateIssueHandler, updateIssueSchema } from "./tools/update_issue.js";
 import { createIssueHandler, createIssueSchema } from "./tools/create_issue.js";
 import { addIssueNoteHandler, addIssueNoteSchema } from "./tools/add_issue_note.js";
 import { logTimeHandler, logTimeSchema } from "./tools/logTime.js";
+import { searchWikiHandler, searchWikiSchema } from "./tools/search_wiki.js";
 
 
 // Factory function to create a new MCP Server instance per connection
@@ -88,6 +89,16 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     logTimeSchema.shape,
     async (args) => {
       const result = await logTimeHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "search_wiki",
+    "특정 프로젝트의 위키 문서 목록과 제목 기반 상세 내용을 조회합니다. 읽기 전용으로 안전합니다.",
+    searchWikiSchema.shape,
+    async (args) => {
+      const result = await searchWikiHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );
