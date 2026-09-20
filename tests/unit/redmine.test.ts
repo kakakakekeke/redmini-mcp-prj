@@ -397,4 +397,72 @@ it("should normalize 204 No Content or empty data to success message on update",
       });
     });
   });
+
+  describe("Versions API", () => {
+    it("should call GET /projects/:project_id/versions.json and return data", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { versions: [{ id: 1, name: "v1.0" }] },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getProjectVersions("my-project");
+      expect(mockGet).toHaveBeenCalledWith("/projects/my-project/versions.json");
+      expect(result).toEqual({ versions: [{ id: 1, name: "v1.0" }] });
+    });
+
+    it("should call GET /versions/:id.json and return version details", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { version: { id: 10, name: "v1.0.0", status: "open" } },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getVersionDetails(10);
+      expect(mockGet).toHaveBeenCalledWith("/versions/10.json");
+      expect(result).toEqual({ version: { id: 10, name: "v1.0.0", status: "open" } });
+    });
+
+    it("should call POST /projects/:project_id/versions.json with payload", async () => {
+      const mockPost = vi.fn().mockResolvedValue({
+        data: { version: { id: 11, name: "v1.1.0", status: "open" } },
+      });
+      (client as any).api = { post: mockPost };
+
+      const versionData = { name: "v1.1.0", status: "open" as const, sharing: "tree" as const };
+      const result = await client.createVersion("my-project", versionData);
+      expect(mockPost).toHaveBeenCalledWith("/projects/my-project/versions.json", {
+        version: versionData,
+      });
+      expect(result).toEqual({ version: { id: 11, name: "v1.1.0", status: "open" } });
+    });
+
+    it("should call PUT /versions/:id.json and return 204 normalized success message", async () => {
+      const mockPut = vi.fn().mockResolvedValue({ status: 204, data: "" });
+      (client as any).api = { put: mockPut };
+
+      const versionData = { status: "closed" as const };
+      const result = await client.updateVersion(11, versionData);
+      expect(mockPut).toHaveBeenCalledWith("/versions/11.json", {
+        version: versionData,
+      });
+      expect(result).toEqual({ message: "Version 11 updated successfully" });
+    });
+
+    it("should call PUT /versions/:id.json and return response.data if present", async () => {
+      const mockPut = vi.fn().mockResolvedValue({ status: 200, data: { version: { id: 11, status: "closed" } } });
+      (client as any).api = { put: mockPut };
+
+      const versionData = { status: "closed" as const };
+      const result = await client.updateVersion(11, versionData);
+      expect(result).toEqual({ version: { id: 11, status: "closed" } });
+    });
+
+    it("should call DELETE /versions/:id.json and return success message", async () => {
+      const mockDelete = vi.fn().mockResolvedValue({ status: 200, data: "" });
+      (client as any).api = { delete: mockDelete };
+
+      const result = await client.deleteVersion(11);
+      expect(mockDelete).toHaveBeenCalledWith("/versions/11.json");
+      expect(result).toEqual({ message: "Version 11 deleted successfully" });
+    });
+  });
 });

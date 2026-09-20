@@ -75,6 +75,23 @@ export interface GetTimeEntriesParams {
   offset?: number;
 }
 
+
+export interface CreateVersionData {
+  name: string;
+  status?: "open" | "locked" | "closed";
+  sharing?: "none" | "descendants" | "hierarchy" | "tree" | "system";
+  due_date?: string;
+  description?: string;
+}
+
+export interface UpdateVersionData {
+  name?: string;
+  status?: "open" | "locked" | "closed";
+  sharing?: "none" | "descendants" | "hierarchy" | "tree" | "system";
+  due_date?: string;
+  description?: string;
+}
+
 export class RedmineClient {
   private api: AxiosInstance;
 
@@ -396,6 +413,57 @@ export class RedmineClient {
     try {
       await this.api.delete(`/relations/${relationId}.json`);
       return { message: `Relation ${relationId} deleted successfully` };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getProjectVersions(projectId: string | number) {
+    try {
+      const { data } = await this.api.get(`/projects/${projectId}/versions.json`);
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getVersionDetails(versionId: number) {
+    try {
+      const { data } = await this.api.get(`/versions/${versionId}.json`);
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createVersion(projectId: string | number, versionData: CreateVersionData) {
+    try {
+      const { data } = await this.api.post(`/projects/${projectId}/versions.json`, {
+        version: versionData,
+      });
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateVersion(versionId: number, versionData: UpdateVersionData) {
+    try {
+      const response = await this.api.put(`/versions/${versionId}.json`, {
+        version: versionData,
+      });
+      if (response.status === 204 || !response.data) {
+        return { message: `Version ${versionId} updated successfully` };
+      }
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async deleteVersion(versionId: number) {
+    try {
+      await this.api.delete(`/versions/${versionId}.json`);
+      return { message: `Version ${versionId} deleted successfully` };
     } catch (error) {
       throw error;
     }

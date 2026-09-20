@@ -16,6 +16,7 @@ import { createOrUpdateWikiHandler, createOrUpdateWikiSchema } from "./tools/cre
 import { getMyAccountHandler, getMyAccountSchema } from "./tools/get_my_account.js";
 import { searchAllHandler, searchAllSchema } from "./tools/search_all.js";
 import { manageIssueRelationHandler, manageIssueRelationSchema } from "./tools/manage_issue_relation.js";
+import { manageVersionsHandler, manageVersionsSchema } from "./tools/manage_versions.js";
 import { logger } from "./utils/logger.js";
 
 
@@ -156,6 +157,17 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     manageIssueRelationSchema.shape,
     async (args) => {
       const result = await manageIssueRelationHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+
+  server.tool(
+    "manage_versions",
+    "프로젝트의 버전/마일스톤을 조회, 생성, 수정 또는 삭제합니다. 생성, 수정, 삭제 시 기본값이 true인 dry_run 파라미터를 통해 안전한 미리보기를 제공하며, 실제 변경을 원할 경우에만 명시적으로 dry_run: false로 전달하세요.",
+    manageVersionsSchema.shape,
+    async (args) => {
+      const result = await manageVersionsHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );

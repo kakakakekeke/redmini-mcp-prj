@@ -18,10 +18,10 @@ tags:
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
 1. [ ] `feature/manage-watchers` : 일감 관찰자 추가 및 제거(manage_watchers) 도구 TDD 구현 (POST/DELETE /issues/{id}/watchers.json)
-2. [ ] `feature/manage-versions` : 프로젝트 버전/마일스톤 관리 도구 TDD 구현 (GET/POST /projects/{id}/versions.json)
-3. [ ] `feature/upload-attachment` : 2단계 파일 업로드 및 첨부 연동(upload_attachment) 도구 TDD 구현 (POST /uploads.json)
+2. [ ] `feature/upload-attachment` : 2단계 파일 업로드 및 첨부 연동(upload_attachment) 도구 TDD 구현 (POST /uploads.json)
 
 ## ✅ 완료된 작업 (Done)
+- [x] `feature/manage-versions` : 프로젝트 버전/마일스톤 관리(manage_versions) 도구 TDD 구현 (GET/POST /projects/{id}/versions.json, PUT/DELETE /versions/{id}.json)
 - [x] `feature/manage-issue-relation` : 일감 관계(블록/선행/후행/중복 등) 설정 및 해제(manage_issue_relation) 도구 TDD 구현 (POST/DELETE /issues/{id}/relations.json)
 - [x] `feature/search-all` : Redmine 전 도메인 통합 검색(search_all) 도구 TDD 구현 (GET /search.json)
 - [x] `feature/get-time-entries` : 작업 시간 기록 목록/상세 조회(get_time_entries) 도구 TDD 구현 (GET /time_entries.json)
