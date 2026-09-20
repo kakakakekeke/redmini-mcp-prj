@@ -84,6 +84,33 @@ describe('RedmineClient', () => {
     });
   });
 
+  describe("getTimeEntries", () => {
+    it("should call GET /time_entries.json with query params and return data", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { time_entries: [{ id: 1, hours: 2 }], total_count: 1 },
+      });
+      (client as any).api = { get: mockGet };
+
+      const params = { project_id: "test", limit: 25 };
+      const result = await client.getTimeEntries(params);
+      expect(mockGet).toHaveBeenCalledWith("/time_entries.json", { params });
+      expect(result).toEqual({ time_entries: [{ id: 1, hours: 2 }], total_count: 1 });
+    });
+  });
+
+  describe("getTimeEntryDetails", () => {
+    it("should call GET /time_entries/:id.json and return data", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { time_entry: { id: 42, hours: 3 } },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getTimeEntryDetails(42);
+      expect(mockGet).toHaveBeenCalledWith("/time_entries/42.json");
+      expect(result).toEqual({ time_entry: { id: 42, hours: 3 } });
+    });
+  });
+
   describe("createTimeEntry", () => {
     it("should call POST /time_entries.json with payload", async () => {
       const mockPost = vi.fn().mockResolvedValue({

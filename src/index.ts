@@ -10,6 +10,7 @@ import { updateIssueHandler, updateIssueSchema } from "./tools/update_issue.js";
 import { createIssueHandler, createIssueSchema } from "./tools/create_issue.js";
 import { addIssueNoteHandler, addIssueNoteSchema } from "./tools/add_issue_note.js";
 import { logTimeHandler, logTimeSchema } from "./tools/logTime.js";
+import { getTimeEntriesHandler, getTimeEntriesSchema } from "./tools/get_time_entries.js";
 import { searchWikiHandler, searchWikiSchema } from "./tools/search_wiki.js";
 import { createOrUpdateWikiHandler, createOrUpdateWikiSchema } from "./tools/create_or_update_wiki.js";
 import { getMyAccountHandler, getMyAccountSchema } from "./tools/get_my_account.js";
@@ -92,6 +93,16 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     logTimeSchema.shape,
     async (args) => {
       const result = await logTimeHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "get_time_entries",
+    "Redmine 작업 시간 기록(Time Entries) 목록을 조회하거나 특정 시간 기록의 상세 정보를 단건 조회합니다. (GET /time_entries.json, GET /time_entries/{id}.json)",
+    getTimeEntriesSchema.shape,
+    async (args) => {
+      const result = await getTimeEntriesHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );
