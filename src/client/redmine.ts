@@ -42,6 +42,17 @@ export interface CreateOrUpdateWikiResult {
   wiki_page?: Record<string, any>;
 }
 
+export interface GetTimeEntriesParams {
+  project_id?: string | number;
+  issue_id?: number;
+  user_id?: string | number;
+  from?: string;
+  to?: string;
+  spent_on?: string;
+  limit?: number;
+  offset?: number;
+}
+
 export class RedmineClient {
   private api: AxiosInstance;
 
@@ -221,6 +232,24 @@ export class RedmineClient {
   async getTimeEntryActivities() {
     const { data } = await this.api.get("/enumerations/time_entry_activities.json");
     return data;
+  }
+
+  async getTimeEntries(params?: GetTimeEntriesParams) {
+    try {
+      const { data } = await this.api.get("/time_entries.json", { params });
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getTimeEntryDetails(id: number) {
+    try {
+      const { data } = await this.api.get(`/time_entries/${id}.json`);
+      return data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async createTimeEntry(payload: { time_entry: Record<string, any> }) {
