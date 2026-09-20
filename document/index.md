@@ -57,6 +57,7 @@ status: active
 | **[[DL-0013-get-my-account-design|document/decision_log/DL-0013-get-my-account-design.md]]** | `DL`, `내계정`, `account`, `get_my_account`, `fallback`, `users_current` | • 내 계정 정보 조회(get_my_account) 도구 설계 및 사양 확인 시<br>• /my/account.json 및 /users/current.json Fallback 전략 참조 시 | DL-0013: 내 계정 정보 조회(get_my_account) 도구 및 Fallback 설계 |
 | **[[DL-0014-upload-attachment-tool-design|document/decision_log/DL-0014-upload-attachment-tool-design.md]]** | `DL`, `업로드`, `첨부`, `upload`, `attachment`, `token`, `uploads.json` | • 파일 업로드 및 토큰 발급(upload_attachment) 도구 설계 확인 시<br>• Base64 변환 및 Redmine 2단계 업로드 연동 참조 시 | DL-0014: 파일 업로드 및 첨부 토큰 발급(upload_attachment) 도구 설계 |
 | **[[attachment_guide|document/attachment_guide.md]]** | `가이드`, `참고문서`, `첨부`, `upload`, `attachment`, `토큰`, `바인딩`, `2단계업로드`, `uploads`, `파일탭`, `Files` | • Redmine 2단계 파일 처리 원리 및 API 연동 시<br>• 일감 첨부 및 프로젝트 파일 탭 등록/바인딩 참고 시 | Redmine 2단계 파일 처리 기술 참고 가이드 (토큰 발급 ➔ 일감 첨부 / 프로젝트 파일 탭 등록) |
+| **[[DL-0015-get-attachment-content-design|document/decision_log/DL-0015-get-attachment-content-design.md]]** | `DL`, `첨부파일`, `본문`, `내용`, `다운로드`, `get_attachment_content`, `attachment` | • 첨부파일 본문 조회(get_attachment_content) 도구 설계 및 사양 확인 시<br>• 텍스트/바이너리 자동 판별 및 Truncation 가드레일 참조 시 | DL-0015: 첨부파일 본문 내용 조회(get_attachment_content) 도구 설계 |
 
 ---
 
