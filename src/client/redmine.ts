@@ -37,6 +37,23 @@ export interface CreateOrUpdateWikiParams {
   parent_title?: string;
 }
 
+export interface SearchAllParams {
+  q: string;
+  scope?: "all" | "my_projects" | "subprojects";
+  open_issues?: boolean;
+  all_words?: boolean;
+  titles_only?: boolean;
+  issues?: boolean;
+  wiki_pages?: boolean;
+  news?: boolean;
+  documents?: boolean;
+  changesets?: boolean;
+  messages?: boolean;
+  projects?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
 export interface CreateOrUpdateWikiResult {
   message: string;
   wiki_page?: Record<string, any>;
@@ -255,6 +272,42 @@ export class RedmineClient {
         message: `Wiki page '${title}' updated successfully.`,
         ...(response.data?.wiki_page ? { wiki_page: response.data.wiki_page } : {}),
       };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async searchAll(params: SearchAllParams) {
+    const queryParams: Record<string, unknown> = {
+      q: params.q,
+    };
+
+    if (params.scope) queryParams.scope = params.scope;
+    if (params.limit !== undefined) queryParams.limit = params.limit;
+    if (params.offset !== undefined) queryParams.offset = params.offset;
+
+    if (params.open_issues !== undefined) queryParams.open_issues = params.open_issues ? 1 : 0;
+    if (params.all_words !== undefined) queryParams.all_words = params.all_words ? 1 : 0;
+    if (params.titles_only !== undefined) queryParams.titles_only = params.titles_only ? 1 : 0;
+
+    const domainFlags = [
+      "issues",
+      "wiki_pages",
+      "news",
+      "documents",
+      "changesets",
+      "messages",
+      "projects",
+    ] as const;
+
+    for (const flag of domainFlags) {
+      if (params[flag] !== undefined) {
+        queryParams[flag] = params[flag] ? 1 : 0;
+      }
+    }
+
+    try {
+      const { data } = await this.api.get("/search.json", { params: queryParams });
+      return data;
     } catch (error) {
       throw error;
     }

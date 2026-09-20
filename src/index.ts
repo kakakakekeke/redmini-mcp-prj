@@ -12,6 +12,7 @@ import { addIssueNoteHandler, addIssueNoteSchema } from "./tools/add_issue_note.
 import { logTimeHandler, logTimeSchema } from "./tools/logTime.js";
 import { searchWikiHandler, searchWikiSchema } from "./tools/search_wiki.js";
 import { createOrUpdateWikiHandler, createOrUpdateWikiSchema } from "./tools/create_or_update_wiki.js";
+import { searchAllHandler, searchAllSchema } from "./tools/search_all.js";
 import { logger } from "./utils/logger.js";
 
 
@@ -112,6 +113,16 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     createOrUpdateWikiSchema.shape,
     async (args) => {
       const result = await createOrUpdateWikiHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "search_all",
+    "Redmine 전체 도메인(일감, 위키, 뉴스, 문서, 변경이력, 메시지, 프로젝트)을 대상으로 키워드 통합 검색을 수행합니다.",
+    searchAllSchema.shape,
+    async (args) => {
+      const result = await searchAllHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );

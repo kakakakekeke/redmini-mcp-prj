@@ -180,4 +180,76 @@ it("should normalize 204 No Content or empty data to success message on update",
       );
     });
   });
+
+  describe("searchAll", () => {
+    it("should call GET /search.json with minimal parameters (only q)", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { results: [], total_count: 0 },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.searchAll({ q: "test" });
+
+      expect(mockGet).toHaveBeenCalledWith("/search.json", {
+        params: { q: "test" },
+      });
+      expect(result).toEqual({ results: [], total_count: 0 });
+    });
+
+    it("should convert boolean flags to 1/0 and pass scope, limit, offset", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: {
+          results: [{ id: 1, title: "Test Result", type: "issue" }],
+          total_count: 1,
+          offset: 10,
+          limit: 20,
+        },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.searchAll({
+        q: "bug fix",
+        scope: "my_projects",
+        open_issues: true,
+        all_words: true,
+        titles_only: false,
+        issues: true,
+        wiki_pages: false,
+        news: true,
+        documents: false,
+        changesets: true,
+        messages: false,
+        projects: true,
+        limit: 20,
+        offset: 10,
+      });
+
+      expect(mockGet).toHaveBeenCalledWith("/search.json", {
+        params: {
+          q: "bug fix",
+          scope: "my_projects",
+          open_issues: 1,
+          all_words: 1,
+          titles_only: 0,
+          issues: 1,
+          wiki_pages: 0,
+          news: 1,
+          documents: 0,
+          changesets: 1,
+          messages: 0,
+          projects: 1,
+          limit: 20,
+          offset: 10,
+        },
+      });
+      expect(result.results.length).toBe(1);
+    });
+
+    it("should throw error if api.get throws", async () => {
+      const mockGet = vi.fn().mockRejectedValue(new Error("Network Error"));
+      (client as any).api = { get: mockGet };
+
+      await expect(client.searchAll({ q: "fail" })).rejects.toThrow("Network Error");
+    });
+  });
 });
