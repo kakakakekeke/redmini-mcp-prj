@@ -561,4 +561,63 @@ it("should normalize 204 No Content or empty data to success message on update",
       ).rejects.toThrow("Upload failed");
     });
   });
+
+  describe("getAttachment", () => {
+    it("should call GET /attachments/:id.json and return data", async () => {
+      const mockAttachment = {
+        attachment: {
+          id: 42,
+          filename: "test.log",
+          filesize: 1024,
+          content_type: "text/plain",
+        },
+      };
+      const mockGet = vi.fn().mockResolvedValue({ data: mockAttachment });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getAttachment(42);
+      expect(mockGet).toHaveBeenCalledWith("/attachments/42.json");
+      expect(result).toEqual(mockAttachment);
+    });
+
+    it("should propagate errors from GET /attachments/:id.json", async () => {
+      const mockGet = vi.fn().mockRejectedValue(new Error("Attachment not found"));
+      (client as any).api = { get: mockGet };
+
+      await expect(client.getAttachment(999)).rejects.toThrow("Attachment not found");
+    });
+  });
+
+  describe("downloadAttachment", () => {
+    it("should call GET /attachments/download/:id/:filename with responseType arraybuffer", async () => {
+      const bufferData = Buffer.from("file data");
+      const mockGet = vi.fn().mockResolvedValue({ data: bufferData });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.downloadAttachment(42, "test.log");
+      expect(mockGet).toHaveBeenCalledWith("/attachments/download/42/test.log", {
+        responseType: "arraybuffer",
+      });
+      expect(result).toEqual(bufferData);
+    });
+
+    it("should properly URL-encode filename with special characters or spaces", async () => {
+      const bufferData = Buffer.from("file data with space");
+      const mockGet = vi.fn().mockResolvedValue({ data: bufferData });
+      (client as any).api = { get: mockGet };
+
+      await client.downloadAttachment(42, "my report (v1).pdf");
+      expect(mockGet).toHaveBeenCalledWith(
+        `/attachments/download/42/${encodeURIComponent("my report (v1).pdf")}`,
+        { responseType: "arraybuffer" }
+      );
+    });
+
+    it("should propagate download errors", async () => {
+      const mockGet = vi.fn().mockRejectedValue(new Error("Download failed"));
+      (client as any).api = { get: mockGet };
+
+      await expect(client.downloadAttachment(42, "test.log")).rejects.toThrow("Download failed");
+    });
+  });
 });

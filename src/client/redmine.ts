@@ -524,4 +524,28 @@ export class RedmineClient {
       throw error;
     }
   }
+
+  async getAttachment(attachmentId: number) {
+    try {
+      const { data } = await this.api.get(`/attachments/${attachmentId}.json`);
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async downloadAttachment(attachmentId: number, filename: string) {
+    try {
+      const encodedFilename = encodeURIComponent(filename);
+      const { data } = await this.api.get(
+        `/attachments/download/${attachmentId}/${encodedFilename}`,
+        {
+          responseType: "arraybuffer",
+        }
+      );
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }

@@ -19,6 +19,7 @@ import { manageIssueRelationHandler, manageIssueRelationSchema } from "./tools/m
 import { manageWatchersHandler, manageWatchersSchema } from "./tools/manage_watchers.js";
 import { manageVersionsHandler, manageVersionsSchema } from "./tools/manage_versions.js";
 import { uploadAttachmentHandler, uploadAttachmentSchema } from "./tools/upload_attachment.js";
+import { getAttachmentContentHandler, getAttachmentContentSchema } from "./tools/get_attachment_content.js";
 import { logger } from "./utils/logger.js";
 
 
@@ -190,6 +191,16 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     uploadAttachmentSchema.shape,
     async (args) => {
       const result = await uploadAttachmentHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "get_attachment_content",
+    "Redmine 첨부파일의 본문 내용을 다운로드하여 조회합니다. 텍스트 파일(로그, 소스코드, 마크다운 등)은 UTF-8 문자열로, 바이너리 파일(이미지 등)은 Base64로 자동 변환되며, 컨텍스트 초과 방지를 위해 max_bytes Truncation을 지원합니다.",
+    getAttachmentContentSchema.shape,
+    async (args) => {
+      const result = await getAttachmentContentHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );
