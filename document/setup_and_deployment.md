@@ -1,7 +1,7 @@
 ---
 title: Redmine MCP 서버 설정 및 클라이언트 연동 가이드 (Setup and Deployment)
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-09-20
 tags:
   - setup
   - deployment
@@ -238,11 +238,84 @@ pm2 startup
 
 ---
 
-## 8. 제공 도구(Tools) 및 실전 활용 프롬프트
+## 8. Docker 컨테이너 기반 배포 가이드 (Container Deployment)
+
+부서 공용 환경이나 클라우드 인프라에서 Redmine MCP 서버를 안정적이고 일관성 있게 운영하기 위해 **경량 멀티 스테이지 프로덕션 Docker 이미지** 및 **Docker Compose** 배포를 지원합니다.
+
+### 8.1. Dockerfile 아키텍처 개요
+* **베이스 이미지**: `node:20-alpine` (경량 및 최소 공격 표면)
+* **빌드 단계 (`builder`)**: TypeScript 컴파일러 및 devDependencies를 활용하여 `dist/` 빌드 수행
+* **실행 단계 (`runner`)**: 프로덕션 의존성(`npm ci --omit=dev`)과 `dist/`만 복사하여 이미지 크기 극소화
+* **보안 격리**: 비루트 사용자(`USER node`)로 컨테이너 내부 프로세스 실행
+* **헬스체크**: 내장 Node.js `fetch`를 통한 SSE 엔드포인트 무결성 주기 점검
+
+### 8.2. Docker 이미지 빌드
+프로젝트 루트에서 다음 명령어를 실행하여 도커 이미지를 빌드합니다:
+
+```bash
+docker build -t redmine-mcp:latest .
+```
+
+### 8.3. Docker 컨테이너 단독 실행 (SSE 모드)
+빌드된 이미지를 단독 컨테이너로 백그라운드 구동합니다:
+
+```bash
+docker run -d \
+  --name redmine-mcp \
+  -p 3000:3000 \
+  -e REDMINE_URL="https://redmine.your-domain.com" \
+  -e REDMINE_API_KEY="your_redmine_api_key" \
+  -e TRANSPORT="sse" \
+  -e PORT="3000" \
+  -e LOG_LEVEL="info" \
+  --restart unless-stopped \
+  redmine-mcp:latest
+```
+
+### 8.4. Docker Compose를 활용한 배포 (권장)
+저장소에 포함된 `docker-compose.yml`을 사용하여 손쉽게 서비스를 기동하고 관리할 수 있습니다.
+
+#### 1) 환경 변수 설정
+`.env` 파일에 Redmine 연결 정보를 정의합니다:
+
+```env
+REDMINE_URL=https://redmine.your-domain.com
+REDMINE_API_KEY=your_redmine_api_key
+TRANSPORT=sse
+PORT=3000
+LOG_LEVEL=info
+```
+
+#### 2) 서비스 실행 및 상태 관리
+```bash
+# 백그라운드 서비스 시작 (이미지 자동 빌드 포함)
+docker compose up -d
+
+# 실행 로그 실시간 모니터링
+docker compose logs -f redmine-mcp
+
+# 서비스 중지
+docker compose down
+```
+
+### 8.5. 컨테이너 상태 및 헬스체크(Healthcheck) 점검
+컨테이너의 정상 기동 여부와 내장 헬스체크 상태를 확인합니다:
+
+```bash
+# 컨테이너 상태 및 Healthcheck (healthy) 확인
+docker ps --filter "name=redmine-mcp"
+
+# SSE 연결 및 엔드포인트 응답 점검
+curl -N -i http://localhost:3000/mcp/sse -H "Accept: text/event-stream"
+```
+
+---
+
+## 9. 제공 도구(Tools) 및 실전 활용 프롬프트
 
 도구의 상세 입출력 스키마는 [[mcp_tools_spec|MCP 도구 명세서]]에 정의되어 있습니다.
 
-### 8.1. 도구 목록 요약
+### 9.1. 도구 목록 요약
 
 | 도구명 | 설명 | 주요 파라미터 |
 | :--- | :--- | :--- |
@@ -251,7 +324,7 @@ pm2 startup
 | `get_projects` | 접근 가능한 프로젝트 목록 조회 | `include_archived` |
 | `ping` | MCP 서버 활성화 상태 점검 | 없음 |
 
-### 8.2. 실전 프롬프트 예시
+### 9.2. 실전 프롬프트 예시
 
 #### 1) 프로젝트 탐색
 > "내가 참여 중인 Redmine 프로젝트 목록을 조회해줘."
@@ -268,7 +341,7 @@ pm2 startup
 
 ---
 
-## 9. 문제 해결 및 FAQ (Troubleshooting)
+## 10. 문제 해결 및 FAQ (Troubleshooting)
 
 ### Q1. 도구 실행 시 `Authentication failed: Missing Redmine API Key` 오류가 발생합니다.
 * **원인**: API Key가 제공되지 않았습니다.

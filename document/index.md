@@ -53,6 +53,7 @@ status: active
 | **[[DL-0009-live-write-tools-verification|document/decision_log/DL-0009-live-write-tools-verification.md]]** | `DL`, `라이브검증`, `쓰기`, `create_issue`, `add_issue_note`, `update_issue`, `dry_run`, `UAT` | • 실제 Redmine 환경에서 2단계 쓰기 도구 3종 검증 결과 확인 시<br>• dry_run 및 Smart Resolver 실측 동작 확인 시 | DL-0009: 2단계 쓰기 도구 3종 라이브 검증 및 안정성 인수 완료 |
 | **[[DL-0010-wiki-creation-tool-design|document/decision_log/DL-0010-wiki-creation-tool-design.md]]** | `DL`, `위키`, `wiki`, `쓰기`, `create_or_update_wiki`, `dry_run`, `Zod` | • 위키 등록/수정(create_or_update_wiki) 도구 설계 및 사양 확인 시<br>• 단일 도구 통합 사유 및 dry_run 가드 정책 참조 시 | DL-0010: 위키 등록 및 수정(create_or_update_wiki) 도구 설계 결정 |
 | **[[DL-0011-security-logger|document/decision_log/DL-0011-security-logger.md]]** | `DL`, `로거`, `보안`, `logger`, `마스킹`, `masking`, `PII`, `API Key`, `stdio`, `stderr` | • 보안 로거 도입 및 개인정보/API Key 마스킹 정책 확인 시<br>• Stdio 채널 무결성 보장 및 로그 레벨 설정 참조 시 | DL-0011: 보안 로거(Security Logger) 설계 및 개인정보·API 키 마스킹 정책 |
+| **[[DL-0012-docker-deployment|document/decision_log/DL-0012-docker-deployment.md]]** | `DL`, `docker`, `도커`, `배포`, `Dockerfile`, `compose`, `SSE`, `healthcheck` | • Docker 컨테이너 빌드 및 배포 환경 구성 시<br>• 멀티 스테이지 빌드 및 보안(비루트) 설정 참조 시 | DL-0012: Dockerfile 멀티 스테이지 빌드 및 SSE 컨테이너 배포 환경 구축 |
 
 ---
 

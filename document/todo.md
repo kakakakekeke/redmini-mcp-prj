@@ -17,9 +17,9 @@ tags:
 > 2. **신규 등록 시 우선순위 검토**: 새로운 할 일을 추가할 때 무조건 맨 밑에 추가하지 마십시오. 작업의 기술적 종속성(Dependency)과 비즈니스 중요도를 분석하여 **가장 적절한 순서(위치)에 삽입**해야 합니다.
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
-- [ ] `chore/docker-deployment` : MCP 서버 프로덕션 배포용 Dockerfile 작성 및 SSE 모드 컨테이너화
 
 ## ✅ 완료된 작업 (Done)
+- [x] `chore/docker-deployment` : MCP 서버 프로덕션 배포용 Dockerfile 작성 및 SSE 모드 컨테이너화
 - [x] `feature/security-logger` : API Key 및 개인정보(PII) 마스킹 보안 로거(logger.ts) 구현
 - [x] `feature/create-or-update-wiki` : 위키 등록 및 수정(create_or_update_wiki) 도구 TDD 구현
 - [x] `feature/search-wiki` : 위키 문서 목록 및 상세 조회(search_wiki) 도구 TDD 구현
