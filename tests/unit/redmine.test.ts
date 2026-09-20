@@ -180,4 +180,80 @@ it("should normalize 204 No Content or empty data to success message on update",
       );
     });
   });
+  describe("getMyAccount", () => {
+    it("should call GET /my/account.json with empty params by default", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { user: { id: 1, login: "admin", firstname: "Admin", lastname: "User" } },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getMyAccount();
+
+      expect(mockGet).toHaveBeenCalledWith("/my/account.json", { params: {} });
+      expect(result).toEqual({
+        user: { id: 1, login: "admin", firstname: "Admin", lastname: "User" },
+      });
+    });
+
+    it("should pass include query parameter when memberships and groups are true", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: 1,
+            login: "admin",
+            memberships: [{ id: 10 }],
+            groups: [{ id: 20 }],
+          },
+        },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getMyAccount({
+        include_memberships: true,
+        include_groups: true,
+      });
+
+      expect(mockGet).toHaveBeenCalledWith("/my/account.json", {
+        params: { include: "memberships,groups" },
+      });
+      expect(result.user.memberships.length).toBe(1);
+    });
+
+    it("should fallback to GET /users/current.json when /my/account.json returns 404", async () => {
+      const notFoundError: any = new Error("Not Found");
+      notFoundError.response = { status: 404 };
+
+      const mockGet = vi.fn()
+        .mockRejectedValueOnce(notFoundError)
+        .mockResolvedValueOnce({
+          data: { user: { id: 1, login: "admin", mail: "admin@example.com" } },
+        });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getMyAccount({ include_memberships: true });
+
+      expect(mockGet).toHaveBeenCalledTimes(2);
+      expect(mockGet).toHaveBeenNthCalledWith(1, "/my/account.json", {
+        params: { include: "memberships" },
+      });
+      expect(mockGet).toHaveBeenNthCalledWith(2, "/users/current.json", {
+        params: { include: "memberships" },
+      });
+      expect(result).toEqual({
+        user: { id: 1, login: "admin", mail: "admin@example.com" },
+      });
+    });
+
+    it("should not fallback and re-throw error when /my/account.json fails with non-404 status", async () => {
+      const authError: any = new Error("Unauthorized");
+      authError.response = { status: 401 };
+
+      const mockGet = vi.fn().mockRejectedValueOnce(authError);
+      (client as any).api = { get: mockGet };
+
+      await expect(client.getMyAccount()).rejects.toThrow("Unauthorized");
+      expect(mockGet).toHaveBeenCalledTimes(1);
+    });
+  });
+
 });

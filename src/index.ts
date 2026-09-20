@@ -12,6 +12,7 @@ import { addIssueNoteHandler, addIssueNoteSchema } from "./tools/add_issue_note.
 import { logTimeHandler, logTimeSchema } from "./tools/logTime.js";
 import { searchWikiHandler, searchWikiSchema } from "./tools/search_wiki.js";
 import { createOrUpdateWikiHandler, createOrUpdateWikiSchema } from "./tools/create_or_update_wiki.js";
+import { getMyAccountHandler, getMyAccountSchema } from "./tools/get_my_account.js";
 import { logger } from "./utils/logger.js";
 
 
@@ -112,6 +113,16 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     createOrUpdateWikiSchema.shape,
     async (args) => {
       const result = await createOrUpdateWikiHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "get_my_account",
+    "현재 인증된 사용자의 계정 및 프로필 정보(이름, 이메일, API 키, 프로젝트 멤버십, 그룹 등)를 조회합니다.",
+    getMyAccountSchema.shape,
+    async (args) => {
+      const result = await getMyAccountHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );
