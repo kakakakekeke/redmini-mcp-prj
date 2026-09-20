@@ -7,19 +7,25 @@ export class SmartNameResolver {
   private statuses: Record<string, number> = {};
   private priorities: Record<string, number> = {};
   private users: Record<string, number> = {};
+  private activities: Record<string, number> = {};
 
   constructor(client: RedmineClient) {
     this.client = client;
   }
 
   async load() {
-    const results = await Promise.allSettled([
+    const fetchPromises: Promise<any>[] = [
       this.client.getProjects(),
       this.client.getTrackers(),
       this.client.getStatuses(),
       this.client.getPriorities(),
       this.client.getUsers()
-    ]);
+    ];
+    if (typeof this.client.getTimeEntryActivities === "function") {
+      fetchPromises.push(this.client.getTimeEntryActivities());
+    }
+
+    const results = await Promise.allSettled(fetchPromises);
 
     this.projects = {};
     if (results[0].status === 'fulfilled' && results[0].value) {
@@ -58,6 +64,13 @@ export class SmartNameResolver {
         }
       }
     }
+
+    this.activities = {};
+    if (results[5] && results[5].status === "fulfilled" && results[5].value) {
+      for (const a of results[5].value.time_entry_activities || []) {
+        this.activities[a.name.toLowerCase()] = a.id;
+      }
+    }
   }
 
   resolveProject(name: string): number | undefined {
@@ -83,5 +96,10 @@ export class SmartNameResolver {
   resolveUser(name: string): number | undefined {
     if (!name) return undefined;
     return this.users[name.toLowerCase()];
+  }
+
+  resolveActivity(name: string): number | undefined {
+    if (!name) return undefined;
+    return this.activities[name.toLowerCase()];
   }
 }
