@@ -18,7 +18,7 @@ tags:
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
 - [x] `test/live-write-tools-verification` : 로컬 Docker Redmine 대상 2단계 쓰기 도구 3종 라이브 검증 및 결과 문서화 (DL-0009)
-- [ ] `feature/textile-markdown-converter` : Markdown ↔ Textile 상호 변환 파이프라인 구현 (본문 및 댓글 서식 보정)
+- [x] `feature/textile-markdown-converter` : Markdown ↔ Textile 상호 변환 파이프라인 구현 (본문 및 댓글 서식 보정)
 - [ ] `feature/log-time` : 작업 시간 기록(log_time) 도구 TDD 구현 (POST /time_entries.json, Smart Resolver 연동)
 - [ ] `feature/search-wiki` : 위키 문서 목록 및 상세 조회(search_wiki) 도구 TDD 구현
 - [ ] `feature/security-logger` : API Key 및 개인정보(PII) 마스킹 보안 로거(logger.ts) 구현
