@@ -37,10 +37,12 @@ status: active
 | **[[vibe_tdd_sop]]** | `SOP`, `TDD`, `바이브코딩`, `프로세스` | • Vibe TDD 기능 개발 및 테스트 사이클 진행 시 | Vibe TDD 워크플로우를 위한 표준 운영 절차서 |
 | **[[0001-initial-architecture]]** | `ADR`, `아키텍처결정` | • 시스템 아키텍처, 굵직한 기술 스택 변경 시 | ADR-0001: Redmine MCP 서버 초기 아키텍처 결정 |
 | **[[0002-test-architecture\|document/adr/0002-test-architecture.md]]** | `ADR`, `테스트`, `아키텍처`, `TDD`, `Mocking`, `MSW` | • 단위/통합/E2E 테스트 계층 구분 확인 시<br>• 모킹(Mock) 전략 및 피라미드 구조 참조 시 | ADR-0002: 테스트 피라미드 및 Mocking 전략 정의 |
+| **[[0003-write-feature-safety-model\|document/adr/0003-write-feature-safety-model.md]]** | `ADR`, `쓰기`, `write`, `보안`, `dry_run`, `guard`, `allowed_statuses` | • 쓰기 기능(add_issue_note, create_issue, update_issue) 보안 모델 확인 시<br>• dry_run 가드 및 allowed_statuses 워크플로우 보호 로직 구현 시 | ADR-0003: 2단계 쓰기 기능 보안 모델 및 dry_run 가드 전략 |
 | **[[DL-0001-vitest]]** | `DL`, `결정로그`, `운영`, `실무결정` | • 코딩 컨벤션, 라이브러리 교체 등 실무적 결정 기록 시 | DL-0001: TDD 테스트 러너로 Vitest 채택 |
 | **[[DL-0002-boost-agent-workflow|document/decision_log/DL-0002-boost-agent-workflow.md]]** | `DL`, `boost`, `다중에이전트`, `무한루프`, `husky` | • /boost 모드 성과 확인 및 훅(Hook) 정책 완화 배경 참조 시 | DL-0002: /boost 모드 성과 및 다중 에이전트 워크플로우 결정 |
 | **[[DL-0003-eventsource|document/decision_log/DL-0003-eventsource.md]]** | `DL`, `테스트`, `SSE`, `eventsource` | • E2E 테스트에서 SSEClientTransport 구성 관련 배경 참조 시 | DL-0003: E2E 테스트 시 SSE 동작을 위한 eventsource 도입 |
 | **[[DL-0004-subagent-share-guardrail\|document/decision_log/DL-0004-subagent-share-guardrail.md]]** | `DL`, `서브에이전트`, `격리`, `worktree`, `share` | • 서브에이전트 호출 및 워크트리 가드레일 훅 구현 배경 확인 시 | DL-0004: 서브에이전트 격리 환경(share) 강제 및 Git Worktree 가드레일 고도화 |
+| **[[DL-0006-write-tools-design\|document/decision_log/DL-0006-write-tools-design.md]]** | `DL`, `쓰기`, `write`, `도구설계`, `dry_run`, `Zod`, `스키마` | • 쓰기 도구(add_issue_note/create_issue/update_issue) 분리·통합 설계 확인 시<br>• Zod 스키마 파라미터 정의 참조 시 | DL-0006: 2단계 쓰기 도구 설계 결정 (분리 vs 통합) |
 | **[[todo]]** | `todo`, `할일`, `태스크`, `진행현황` | • 다음 개발 목표(Task)를 확인하거나 완료 처리할 때 | 전체 프로젝트의 진행 현황 및 TO-DO 리스트 |
 | **[[integration_test_scenarios]]** | `테스트`, `시나리오`, `UAT`, `E2E` | • 서버 구동 후 실 환경 연동 및 통합 테스트 수행 시 | 종단간(E2E) 통합 테스트 및 인수 테스트(UAT) 시나리오 |
 | **[[setup_and_deployment|document/setup_and_deployment.md]]** | `설정`, `배포`, `연동`, `setup`, `deployment`, `claude`, `cursor`, `stdio`, `sse`, `환경변수` | • Claude Desktop 또는 Cursor IDE에 MCP 서버 연동 설정 시<br>• Stdio 또는 SSE(HTTP) 전송 모드로 서버 배포 시<br>• Redmine REST API 활성화 및 API Key 발급 방법 확인 시 | Claude Desktop 및 Cursor IDE 연동 가이드, 배포 모드(Stdio/SSE) 설정 및 문제 해결 |
