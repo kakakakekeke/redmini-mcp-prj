@@ -11,13 +11,7 @@ vi.mock('../../src/utils/logger.js', () => ({
   },
 }));
 
-// Mock SSEServerTransport - using factory function form
-const mockTransport = {
-  sessionId: 'test-session-id-123',
-  handlePostMessage: vi.fn().mockResolvedValue(undefined),
-  close: vi.fn().mockResolvedValue(undefined),
-};
-
+// Mock SSEServerTransport - using constructor function form for vitest compatibility
 vi.mock('@modelcontextprotocol/sdk/server/sse.js', () => ({
   SSEServerTransport: vi.fn(function (this: any) {
     this.sessionId = 'test-session-id-123';
@@ -82,6 +76,14 @@ describe('SSE Runner IP Logging', () => {
     } as unknown as Request;
   }
 
+  /** Helper: establish a session in the router for POST /message tests */
+  async function setupSession(router: any) {
+    const sseHandler = getHandler(router, 'get', '/sse');
+    if (sseHandler) {
+      await sseHandler(makeSseReq({}, '127.0.0.1'), makeSseRes(), vi.fn());
+    }
+  }
+
   describe('GET /sse - IP Logging', () => {
     it('should log x-forwarded-for header when present on SSE connection', async () => {
       const router = createSSERouter(mockCreateServer);
@@ -122,20 +124,29 @@ describe('SSE Runner IP Logging', () => {
         })
       );
     });
+
+    it('should extract only the first IP when x-forwarded-for contains multiple IPs', async () => {
+      const router = createSSERouter(mockCreateServer);
+      const handler = getHandler(router, 'get', '/sse');
+      expect(handler, 'GET /sse handler must exist').toBeDefined();
+
+      const req = makeSseReq({ 'x-forwarded-for': '203.0.113.42, 198.51.100.1, 10.0.0.1' }, '127.0.0.1');
+      const res = makeSseRes();
+      const next = vi.fn();
+
+      await handler!(req, res, next);
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'SSE connection established',
+        expect.objectContaining({
+          ip: '203.0.113.42',
+          sessionId: 'test-session-id-123',
+        })
+      );
+    });
   });
 
   describe('POST /message - IP Logging', () => {
-    async function setupSession(router: any) {
-      const sseHandler = getHandler(router, 'get', '/sse');
-      if (sseHandler) {
-        await sseHandler(
-          makeSseReq({}, '127.0.0.1'),
-          makeSseRes(),
-          vi.fn()
-        );
-      }
-    }
-
     it('should log x-forwarded-for header when present on tool call', async () => {
       const router = createSSERouter(mockCreateServer);
       await setupSession(router);
@@ -196,6 +207,37 @@ describe('SSE Runner IP Logging', () => {
         expect.objectContaining({
           ip: '172.16.0.1',
           sessionId: 'test-session-id-123',
+        })
+      );
+    });
+
+    it('should extract only the first IP when x-forwarded-for contains multiple IPs', async () => {
+      const router = createSSERouter(mockCreateServer);
+      await setupSession(router);
+      vi.clearAllMocks();
+
+      const handler = getHandler(router, 'post', '/message');
+      expect(handler, 'POST /message handler must exist').toBeDefined();
+
+      const req = {
+        headers: { 'x-forwarded-for': '10.0.0.5, 172.16.0.1' },
+        ip: '127.0.0.1',
+        query: { sessionId: 'test-session-id-123' },
+        on: vi.fn(),
+      } as unknown as Request;
+
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn(),
+        json: vi.fn(),
+      } as unknown as Response;
+
+      await handler!(req, res, vi.fn());
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'Tool call received',
+        expect.objectContaining({
+          ip: '10.0.0.5',
         })
       );
     });
