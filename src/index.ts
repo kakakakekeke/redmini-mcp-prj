@@ -6,6 +6,7 @@ import { getAuthClient } from "./middleware/auth.js";
 import { getProjectsHandler, getProjectsSchema } from "./tools/get_projects.js";
 import { getIssueDetailsHandler, getIssueDetailsSchema } from "./tools/get_issue_details.js";
 import { searchIssuesHandler, searchIssuesSchema } from "./tools/search_issues.js";
+import { updateIssueHandler, updateIssueSchema } from "./tools/update_issue.js";
 
 // Factory function to create a new MCP Server instance per connection
 export function createRedmineMcpServer(headers: Record<string, string | string[] | undefined> = {}) {
@@ -42,6 +43,16 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     searchIssuesSchema.shape,
     async (args) => {
       const result = await searchIssuesHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "update_issue",
+    "일감의 상태나 내용을 업데이트합니다. (dry_run 지원)",
+    updateIssueSchema.shape,
+    async (args) => {
+      const result = await updateIssueHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );

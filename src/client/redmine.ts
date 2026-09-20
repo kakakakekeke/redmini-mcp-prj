@@ -66,6 +66,18 @@ export class RedmineClient {
     }
   }
 
+  async updateIssue(issueId: number, issueData: any) {
+    try {
+      const { status, data } = await this.api.put(`/issues/${issueId}.json`, { issue: issueData });
+      if (status === 204) {
+        return {};
+      }
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getTrackers() {
     const { data } = await this.api.get('/trackers.json');
     return data;

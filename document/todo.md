@@ -18,9 +18,9 @@ tags:
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
 
+- [ ] `feature/update-issue` : update_issue 도구 TDD 구현 (dry_run 가드, allowed_statuses 워크플로우 보호)
 - [ ] `feature/add-issue-note` : add_issue_note 도구 TDD 구현 (댓글/저널 추가, 낮은 리스크)
 - [ ] `feature/create-issue` : create_issue 도구 TDD 구현 (dry_run 가드, Smart Name Resolver 연동)
-- [ ] `feature/update-issue` : update_issue 도구 TDD 구현 (dry_run 가드, allowed_statuses 워크플로우 보호)
 
 ## ✅ 완료된 작업 (Done)
 - [x] `feature/tool-descriptions` : MCP 도구 및 Zod 스키마에 자연어 설명(description) 보강
