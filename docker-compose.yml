@@ -1,28 +1,16 @@
 services:
-  redmine:
-    image: redmine:latest
-    container_name: local-redmine
-    restart: always
+  redmine-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: redmine-mcp:latest
+    container_name: redmine-mcp
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      REDMINE_DB_POSTGRES: db
-      REDMINE_DB_USERNAME: redmine
-      REDMINE_DB_PASSWORD: redmine_password
-      REDMINE_DB_DATABASE: redmine_db
-    depends_on:
-      - db
-
-  db:
-    image: postgres:15-alpine
-    container_name: local-redmine-db
-    restart: always
-    environment:
-      POSTGRES_USER: redmine
-      POSTGRES_PASSWORD: redmine_password
-      POSTGRES_DB: redmine_db
-    volumes:
-      - redmine_db_data:/var/lib/postgresql/data
-
-volumes:
-  redmine_db_data:
+      - REDMINE_URL=${REDMINE_URL:-https://redmine.example.com}
+      - REDMINE_API_KEY=${REDMINE_API_KEY:-your_redmine_api_key}
+      - TRANSPORT=sse
+      - PORT=3000
+      - LOG_LEVEL=info
