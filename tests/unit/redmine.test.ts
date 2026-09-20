@@ -97,4 +97,87 @@ describe('RedmineClient', () => {
       expect(result).toEqual({ time_entry: { id: 123, hours: 2 } });
     });
   });
+
+  describe("createOrUpdateWiki", () => {
+    it("should call PUT /projects/:project_id/wiki/:title.json and return 201 Created response", async () => {
+      const mockPut = vi.fn().mockResolvedValue({
+        status: 201,
+        data: {
+          wiki_page: {
+            title: "API_Docs",
+            version: 1,
+            text: "# API Documentation",
+            created_on: "2026-09-20T12:00:00Z",
+          },
+        },
+      });
+      (client as any).api = { put: mockPut };
+
+      const result = await client.createOrUpdateWiki({
+        project_id: "my-project",
+        title: "API Docs",
+        text: "# API Documentation",
+        comments: "Initial docs",
+        parent_title: "Home",
+      });
+
+      expect(mockPut).toHaveBeenCalledWith("/projects/my-project/wiki/API%20Docs.json", {
+        wiki_page: {
+          text: "# API Documentation",
+          comments: "Initial docs",
+          parent_title: "Home",
+        },
+      });
+      expect(result).toEqual({
+        message: "Wiki page 'API Docs' created successfully.",
+        wiki_page: {
+          title: "API_Docs",
+          version: 1,
+          text: "# API Documentation",
+          created_on: "2026-09-20T12:00:00Z",
+        },
+      });
+    });
+
+it("should normalize 204 No Content or empty data to success message on update", async () => {
+      const mockPut = vi.fn().mockResolvedValue({
+        status: 204,
+        data: "",
+      });
+      (client as any).api = { put: mockPut };
+
+      const result = await client.createOrUpdateWiki({
+        project_id: "my-project",
+        title: "Home",
+        text: "Updated content",
+        version: 2,
+      });
+
+      expect(mockPut).toHaveBeenCalledWith("/projects/my-project/wiki/Home.json", {
+        wiki_page: {
+          text: "Updated content",
+          version: 2,
+        },
+      });
+      expect(result).toEqual({
+        message: "Wiki page 'Home' updated successfully.",
+      });
+    });
+
+    it("should properly encode Korean characters and symbols in wiki title", async () => {
+      const mockPut = vi.fn().mockResolvedValue({ status: 204, data: "" });
+      (client as any).api = { put: mockPut };
+
+      await client.createOrUpdateWiki({
+        project_id: "my-project",
+        title: "개발 가이드 & FAQ",
+        text: "본문 내용",
+      });
+
+      expect(mockPut).toHaveBeenCalledWith(
+        "/projects/my-project/wiki/%EA%B0%9C%EB%B0%9C%20%EA%B0%80%EC%9D%B4%EB%93%9C%20%26%20FAQ.json",
+        expect.anything()
+      );
+    });
+  });
 });

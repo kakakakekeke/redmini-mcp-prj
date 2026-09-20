@@ -27,6 +27,21 @@ export interface SearchWikiParams {
   limit?: number;
 }
 
+
+export interface CreateOrUpdateWikiParams {
+  project_id: string;
+  title: string;
+  text: string;
+  comments?: string;
+  version?: number;
+  parent_title?: string;
+}
+
+export interface CreateOrUpdateWikiResult {
+  message: string;
+  wiki_page?: Record<string, any>;
+}
+
 export class RedmineClient {
   private api: AxiosInstance;
 
@@ -216,5 +231,32 @@ export class RedmineClient {
       throw error;
     }
   }
-}
+  async createOrUpdateWiki(params: CreateOrUpdateWikiParams): Promise<CreateOrUpdateWikiResult> {
+    const { project_id, title, text, comments, version, parent_title } = params;
+    const wiki_page: Record<string, unknown> = { text };
+    if (comments !== undefined) wiki_page.comments = comments;
+    if (version !== undefined) wiki_page.version = version;
+    if (parent_title !== undefined) wiki_page.parent_title = parent_title;
 
+    try {
+      const response = await this.api.put(
+        `/projects/${encodeURIComponent(project_id)}/wiki/${encodeURIComponent(title)}.json`,
+        { wiki_page }
+      );
+
+      if (response.status === 201) {
+        return {
+          message: `Wiki page '${title}' created successfully.`,
+          wiki_page: response.data?.wiki_page || response.data,
+        };
+      }
+
+      return {
+        message: `Wiki page '${title}' updated successfully.`,
+        ...(response.data?.wiki_page ? { wiki_page: response.data.wiki_page } : {}),
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+}

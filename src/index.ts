@@ -11,6 +11,7 @@ import { createIssueHandler, createIssueSchema } from "./tools/create_issue.js";
 import { addIssueNoteHandler, addIssueNoteSchema } from "./tools/add_issue_note.js";
 import { logTimeHandler, logTimeSchema } from "./tools/logTime.js";
 import { searchWikiHandler, searchWikiSchema } from "./tools/search_wiki.js";
+import { createOrUpdateWikiHandler, createOrUpdateWikiSchema } from "./tools/create_or_update_wiki.js";
 
 
 // Factory function to create a new MCP Server instance per connection
@@ -99,6 +100,17 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     searchWikiSchema.shape,
     async (args) => {
       const result = await searchWikiHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+
+  server.tool(
+    "create_or_update_wiki",
+    "프로젝트의 위키 페이지를 신규 등록하거나 기존 위키 문서를 수정합니다. 기본값이 true인 dry_run 파라미터를 통해 안전한 미리보기를 제공하며, 실제 등록/수정을 원할 경우에만 명시적으로 dry_run: false로 전달하세요.",
+    createOrUpdateWikiSchema.shape,
+    async (args) => {
+      const result = await createOrUpdateWikiHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );
