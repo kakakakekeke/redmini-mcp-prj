@@ -207,6 +207,7 @@ it("should normalize 204 No Content or empty data to success message on update",
       );
     });
   });
+
   describe("getMyAccount", () => {
     it("should call GET /my/account.json with empty params by default", async () => {
       const mockGet = vi.fn().mockResolvedValue({
@@ -352,6 +353,48 @@ it("should normalize 204 No Content or empty data to success message on update",
       (client as any).api = { get: mockGet };
 
       await expect(client.searchAll({ q: "fail" })).rejects.toThrow("Network Error");
+    });
+  });
+
+  describe("Issue Relations API", () => {
+    it("should call GET /issues/:id/relations.json and return data", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { relations: [{ id: 1, issue_id: 10, issue_to_id: 20, relation_type: "blocks" }] },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getIssueRelations(10);
+      expect(mockGet).toHaveBeenCalledWith("/issues/10/relations.json");
+      expect(result).toEqual({
+        relations: [{ id: 1, issue_id: 10, issue_to_id: 20, relation_type: "blocks" }],
+      });
+    });
+
+    it("should call POST /issues/:id/relations.json with payload", async () => {
+      const mockPost = vi.fn().mockResolvedValue({
+        data: { relation: { id: 1, issue_id: 10, issue_to_id: 20, relation_type: "blocks" } },
+      });
+      (client as any).api = { post: mockPost };
+
+      const relationData = { issue_to_id: 20, relation_type: "blocks", delay: 1 };
+      const result = await client.createIssueRelation(10, relationData);
+      expect(mockPost).toHaveBeenCalledWith("/issues/10/relations.json", {
+        relation: relationData,
+      });
+      expect(result).toEqual({
+        relation: { id: 1, issue_id: 10, issue_to_id: 20, relation_type: "blocks" },
+      });
+    });
+
+    it("should call DELETE /relations/:id.json and return success message", async () => {
+      const mockDelete = vi.fn().mockResolvedValue({ status: 200, data: "" });
+      (client as any).api = { delete: mockDelete };
+
+      const result = await client.deleteIssueRelation(99);
+      expect(mockDelete).toHaveBeenCalledWith("/relations/99.json");
+      expect(result).toEqual({
+        message: "Relation 99 deleted successfully",
+      });
     });
   });
 });

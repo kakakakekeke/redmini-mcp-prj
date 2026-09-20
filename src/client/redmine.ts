@@ -368,4 +368,36 @@ export class RedmineClient {
       throw error;
     }
   }
+
+  async getIssueRelations(issueId: number) {
+    try {
+      const { data } = await this.api.get(`/issues/${issueId}/relations.json`);
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createIssueRelation(
+    issueId: number,
+    relationData: { issue_to_id: number; relation_type: string; delay?: number }
+  ) {
+    try {
+      const { data } = await this.api.post(`/issues/${issueId}/relations.json`, {
+        relation: relationData,
+      });
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async deleteIssueRelation(relationId: number) {
+    try {
+      await this.api.delete(`/relations/${relationId}.json`);
+      return { message: `Relation ${relationId} deleted successfully` };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
