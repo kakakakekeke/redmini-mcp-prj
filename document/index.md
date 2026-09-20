@@ -51,6 +51,7 @@ status: active
 | **[[DL-0007-dry-run-default-true|document/decision_log/DL-0007-dry-run-default-true.md]]** | `DL`, `보안`, `dry_run`, `fail-open` | • dry_run 파라미터 기본값 설정 확인 시 | DL-0007: dry_run 기본값을 true로 변경하여 보안 강화 |
 | **[[DL-0008-subagent-todo-completion-enforcement|document/decision_log/DL-0008-subagent-todo-completion-enforcement.md]]** | `DL`, `서브에이전트`, `todo`, `대기열`, `완료동기화`, `SOP` | • 서브에이전트 작업 완료 조건 및 todo.md 갱신 규칙 확인 시 | DL-0008: 서브에이전트 기능 커밋 시 TO-DO 대기열 완료([x]) 동기화 의무화 |
 | **[[DL-0009-live-write-tools-verification|document/decision_log/DL-0009-live-write-tools-verification.md]]** | `DL`, `라이브검증`, `쓰기`, `create_issue`, `add_issue_note`, `update_issue`, `dry_run`, `UAT` | • 실제 Redmine 환경에서 2단계 쓰기 도구 3종 검증 결과 확인 시<br>• dry_run 및 Smart Resolver 실측 동작 확인 시 | DL-0009: 2단계 쓰기 도구 3종 라이브 검증 및 안정성 인수 완료 |
+| **[[DL-0010-wiki-creation-tool-design|document/decision_log/DL-0010-wiki-creation-tool-design.md]]** | `DL`, `위키`, `wiki`, `쓰기`, `create_or_update_wiki`, `dry_run`, `Zod` | • 위키 등록/수정(create_or_update_wiki) 도구 설계 및 사양 확인 시<br>• 단일 도구 통합 사유 및 dry_run 가드 정책 참조 시 | DL-0010: 위키 등록 및 수정(create_or_update_wiki) 도구 설계 결정 |
 
 ---
 
