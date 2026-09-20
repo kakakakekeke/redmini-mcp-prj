@@ -400,4 +400,42 @@ export class RedmineClient {
       throw error;
     }
   }
+
+  async getWatchers(issueId: number) {
+    try {
+      const { data } = await this.api.get(`/issues/${issueId}.json`, {
+        params: { include: "watchers" },
+      });
+      return data.issue?.watchers || [];
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async addWatcher(issueId: number, userId: number) {
+    try {
+      const response = await this.api.post(`/issues/${issueId}/watchers.json`, {
+        user_id: userId,
+      });
+      if (response.status === 204 || !response.data) {
+        return {
+          message: `User ${userId} added as watcher to issue ${issueId} successfully`,
+        };
+      }
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async removeWatcher(issueId: number, userId: number) {
+    try {
+      await this.api.delete(`/issues/${issueId}/watchers/${userId}.json`);
+      return {
+        message: `User ${userId} removed from watchers of issue ${issueId} successfully`,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }

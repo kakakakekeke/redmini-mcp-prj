@@ -16,6 +16,7 @@ import { createOrUpdateWikiHandler, createOrUpdateWikiSchema } from "./tools/cre
 import { getMyAccountHandler, getMyAccountSchema } from "./tools/get_my_account.js";
 import { searchAllHandler, searchAllSchema } from "./tools/search_all.js";
 import { manageIssueRelationHandler, manageIssueRelationSchema } from "./tools/manage_issue_relation.js";
+import { manageWatchersHandler, manageWatchersSchema } from "./tools/manage_watchers.js";
 import { logger } from "./utils/logger.js";
 
 
@@ -156,6 +157,16 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     manageIssueRelationSchema.shape,
     async (args) => {
       const result = await manageIssueRelationHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "manage_watchers",
+    "일감의 관찰자(Watcher)를 목록 조회, 추가 또는 제거합니다. 추가 및 제거 시 기본값이 true인 dry_run 파라미터를 통해 안전한 미리보기를 제공하며, 실제 변경을 원할 경우에만 명시적으로 dry_run: false로 전달하세요.",
+    manageWatchersSchema.shape,
+    async (args) => {
+      const result = await manageWatchersHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );
