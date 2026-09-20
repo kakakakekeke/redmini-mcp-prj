@@ -57,8 +57,8 @@ Redmine 일감 및 시스템에 첨부된 파일(로그, 소스코드, 텍스트
 - 대용량 로그나 덤프 파일이 컨텍스트 윈도우를 소진시키는 문제를 막기 위해 `max_bytes` 기반의 Truncation 보호 장치를 기본 탑재함.
 
 ## 4. 후속 조치 (Action Items)
-- [ ] `tests/tools/get_attachment_content.test.ts` 테스트 코드 작성 (TDD Red)
-- [ ] `src/client/redmine.ts`에 `getAttachment()`, `downloadAttachment()` 메서드 구현 (TDD Green)
-- [ ] `src/tools/get_attachment_content.ts` 도구 및 Zod 스키마 구현
-- [ ] `src/index.ts`에 도구 등록
-- [ ] `document/todo.md` 대기열 동기화 및 완료(`[x]`) 처리
+- [x] `tests/tools/get_attachment_content.test.ts` 테스트 코드 작성 (TDD Red)
+- [x] `src/client/redmine.ts`에 `getAttachment()`, `downloadAttachment()` 메서드 구현 (TDD Green)
+- [x] `src/tools/get_attachment_content.ts` 도구 및 Zod 스키마 구현
+- [x] `src/index.ts`에 도구 등록
+- [x] `document/todo.md` 대기열 동기화 및 완료(`[x]`) 처리
