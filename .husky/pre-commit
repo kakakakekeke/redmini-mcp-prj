@@ -15,7 +15,7 @@ if [ "$GIT_DIR" = "$GIT_COMMON_DIR" ]; then
     STAGED_FILES=$(git diff --cached --name-only)
     for FILE in $STAGED_FILES; do
         case "$FILE" in
-            document/todo.md | document/index.md | document/decision_log/* | document/adr/* | .env)
+            document/todo.md | document/index.md | document/decision_log/* | document/adr/* | document/sop/* | document/templates/* | .env)
                 # 화이트리스트 패스
                 ;;
             *)
