@@ -124,4 +124,23 @@ export class RedmineClient {
 
     return { users: allUsers };
   }
+
+  async addIssueNote(params: { issue_id: number; notes: string; private_notes?: boolean }) {
+    const payload = {
+      issue: {
+        notes: params.notes,
+        private_notes: params.private_notes || false
+      }
+    };
+    try {
+      const response = await this.api.put(`/issues/${params.issue_id}.json`, payload);
+      if (response.status === 204 || !response.data) {
+        return {};
+      }
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
+
