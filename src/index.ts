@@ -18,6 +18,7 @@ import { searchAllHandler, searchAllSchema } from "./tools/search_all.js";
 import { manageIssueRelationHandler, manageIssueRelationSchema } from "./tools/manage_issue_relation.js";
 import { manageWatchersHandler, manageWatchersSchema } from "./tools/manage_watchers.js";
 import { manageVersionsHandler, manageVersionsSchema } from "./tools/manage_versions.js";
+import { uploadAttachmentHandler, uploadAttachmentSchema } from "./tools/upload_attachment.js";
 import { logger } from "./utils/logger.js";
 
 
@@ -183,6 +184,15 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     }
   );
 
+  server.tool(
+    "upload_attachment",
+    "Redmine에 파일(텍스트 또는 Base64 인코딩 바이너리/이미지)을 업로드하고 첨부 토큰(token)을 발급받습니다. 발급된 토큰은 일감 생성(create_issue) 또는 수정(update_issue) 시 uploads 필드에 전달하여 첨부 파일로 연동할 수 있습니다.",
+    uploadAttachmentSchema.shape,
+    async (args) => {
+      const result = await uploadAttachmentHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
   server.tool(
     "ping",
     "Redmine MCP 서버의 연결 상태 및 헬스체크를 수행합니다.",

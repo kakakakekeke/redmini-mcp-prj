@@ -397,7 +397,6 @@ it("should normalize 204 No Content or empty data to success message on update",
       });
     });
   });
-
   describe("Watchers API", () => {
     it("should call GET /issues/:id.json?include=watchers and return watchers array", async () => {
       const mockGet = vi.fn().mockResolvedValue({
@@ -531,6 +530,35 @@ it("should normalize 204 No Content or empty data to success message on update",
       const result = await client.deleteVersion(11);
       expect(mockDelete).toHaveBeenCalledWith("/versions/11.json");
       expect(result).toEqual({ message: "Version 11 deleted successfully" });
+    });
+  });
+
+  describe("uploadFile", () => {
+    it("should call POST /uploads.json with binary content and headers", async () => {
+      const mockPost = vi.fn().mockResolvedValue({
+        data: { upload: { token: "7167.ed1074a1a2" } },
+      });
+      (client as any).api = { post: mockPost };
+
+      const content = Buffer.from("test file content");
+      const result = await client.uploadFile("test.txt", content);
+
+      expect(mockPost).toHaveBeenCalledWith("/uploads.json", content, {
+        params: { filename: "test.txt" },
+        headers: {
+          "Content-Type": "application/octet-stream",
+        },
+      });
+      expect(result).toEqual({ upload: { token: "7167.ed1074a1a2" } });
+    });
+
+    it("should throw error if api.post throws", async () => {
+      const mockPost = vi.fn().mockRejectedValue(new Error("Upload failed"));
+      (client as any).api = { post: mockPost };
+
+      await expect(
+        client.uploadFile("test.txt", "some content")
+      ).rejects.toThrow("Upload failed");
     });
   });
 });
