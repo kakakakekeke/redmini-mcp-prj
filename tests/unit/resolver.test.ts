@@ -17,6 +17,7 @@ describe('SmartNameResolver', () => {
     client.getStatuses = vi.fn().mockResolvedValue({ issue_statuses: [{ id: 1, name: 'New' }, { id: 2, name: 'In Progress' }] });
     client.getPriorities = vi.fn().mockResolvedValue({ issue_priorities: [{ id: 1, name: 'Low' }, { id: 2, name: 'High' }] });
     client.getUsers = vi.fn().mockResolvedValue({ users: [{ id: 1, firstname: 'John', lastname: 'Doe', login: 'jdoe' }] });
+    client.getTimeEntryActivities = vi.fn().mockResolvedValue({ time_entry_activities: [{ id: 1, name: 'Design' }, { id: 2, name: 'Development' }] });
 
     resolver = new SmartNameResolver(client);
   });
@@ -65,6 +66,13 @@ describe('SmartNameResolver', () => {
     expect(resolver.resolveUser('jdoe')).toBe(1);
     expect(resolver.resolveUser('Unknown')).toBeUndefined();
     expect(resolver.resolveUser(undefined as any)).toBeUndefined();
+  });
+
+  it('should resolve activity by name', async () => {
+    await resolver.load();
+    expect(resolver.resolveActivity('Design')).toBe(1);
+    expect(resolver.resolveActivity('development')).toBe(2);
+    expect(resolver.resolveActivity(undefined as any)).toBeUndefined();
   });
 
   it('should tolerate partial failures in load', async () => {

@@ -163,5 +163,19 @@ export class RedmineClient {
       throw error;
     }
   }
+
+  async getTimeEntryActivities() {
+    const { data } = await this.api.get("/enumerations/time_entry_activities.json");
+    return data;
+  }
+
+  async createTimeEntry(payload: { time_entry: Record<string, any> }) {
+    try {
+      const { data } = await this.api.post("/time_entries.json", payload);
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 

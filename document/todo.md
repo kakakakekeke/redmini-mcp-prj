@@ -19,12 +19,12 @@ tags:
 
 - [ ] `test/live-write-tools-verification` : 로컬 Docker Redmine 대상 2단계 쓰기 도구 3종 라이브 검증 및 결과 문서화 (DL-0009)
 - [ ] `feature/textile-markdown-converter` : Markdown ↔ Textile 상호 변환 파이프라인 구현 (본문 및 댓글 서식 보정)
-- [ ] `feature/log-time` : 작업 시간 기록(log_time) 도구 TDD 구현 (POST /time_entries.json, Smart Resolver 연동)
 - [ ] `feature/search-wiki` : 위키 문서 목록 및 상세 조회(search_wiki) 도구 TDD 구현
 - [ ] `feature/security-logger` : API Key 및 개인정보(PII) 마스킹 보안 로거(logger.ts) 구현
 - [ ] `chore/docker-deployment` : MCP 서버 프로덕션 배포용 Dockerfile 작성 및 SSE 모드 컨테이너화
 
 ## ✅ 완료된 작업 (Done)
+- [x] `feature/log-time` : 작업 시간 기록(log_time) 도구 TDD 구현 (POST /time_entries.json, Smart Resolver 연동)
 - [x] `feature/add-issue-note` : add_issue_note 도구 TDD 구현 (댓글/저널 추가, 낮은 리스크)
 - [x] `feature/update-issue` : update_issue 도구 TDD 구현 (dry_run 가드, allowed_statuses 워크플로우 보호)
 - [x] `feature/create-issue` : create_issue 도구 TDD 구현 (dry_run 가드, Smart Name Resolver 연동, DL-0007 보안 조치)

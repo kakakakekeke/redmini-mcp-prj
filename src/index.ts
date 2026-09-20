@@ -9,6 +9,8 @@ import { searchIssuesHandler, searchIssuesSchema } from "./tools/search_issues.j
 import { updateIssueHandler, updateIssueSchema } from "./tools/update_issue.js";
 import { createIssueHandler, createIssueSchema } from "./tools/create_issue.js";
 import { addIssueNoteHandler, addIssueNoteSchema } from "./tools/add_issue_note.js";
+import { logTimeHandler, logTimeSchema } from "./tools/logTime.js";
+
 
 // Factory function to create a new MCP Server instance per connection
 export function createRedmineMcpServer(headers: Record<string, string | string[] | undefined> = {}) {
@@ -75,6 +77,17 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     createIssueSchema.shape,
     async (args) => {
       const result = await createIssueHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+
+  server.tool(
+    "log_time",
+    "일감 또는 프로젝트에 작업 시간을 기록합니다 (POST /time_entries.json).",
+    logTimeSchema.shape,
+    async (args) => {
+      const result = await logTimeHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );

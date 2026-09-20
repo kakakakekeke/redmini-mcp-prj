@@ -68,4 +68,33 @@ describe('RedmineClient', () => {
       expect(result).toEqual({ issue: { id: 42 } });
     });
   });
+
+  describe("getTimeEntryActivities", () => {
+    it("should call GET /enumerations/time_entry_activities.json and return data", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { time_entry_activities: [{ id: 1, name: "Design" }] },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getTimeEntryActivities();
+      expect(mockGet).toHaveBeenCalledWith("/enumerations/time_entry_activities.json");
+      expect(result).toEqual({
+        time_entry_activities: [{ id: 1, name: "Design" }],
+      });
+    });
+  });
+
+  describe("createTimeEntry", () => {
+    it("should call POST /time_entries.json with payload", async () => {
+      const mockPost = vi.fn().mockResolvedValue({
+        data: { time_entry: { id: 123, hours: 2 } },
+      });
+      (client as any).api = { post: mockPost };
+
+      const payload = { time_entry: { issue_id: 1, hours: 2 } };
+      const result = await client.createTimeEntry(payload);
+      expect(mockPost).toHaveBeenCalledWith("/time_entries.json", payload);
+      expect(result).toEqual({ time_entry: { id: 123, hours: 2 } });
+    });
+  });
 });
