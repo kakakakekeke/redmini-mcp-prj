@@ -49,6 +49,7 @@ status: active
 | **[[git_workflow_sop|document/sop/git_workflow_sop.md]]** | `SOP`, `git`, `워크플로우`, `브랜치`, `worktree`, `멀티에이전트` | • 협업, 브랜치 생성, 커밋 작성, 워크트리 구성 시 | 브랜치 관리, 커밋 메시지 컨벤션 및 다중 에이전트 동시 작업을 위한 Git Worktree 절차서 |
 | **[[DL-0005-live-tool-verification|document/decision_log/DL-0005-live-tool-verification.md]]** | `DL`, `라이브검증`, `테스트`, `ping`, `get_projects`, `search_issues`, `get_issue_details` | • 실제 Redmine 환경 연동 상태 및 도구 4종 검증 결과 확인 시<br>• 1단계(MVP 조회 전용) 완료 판정 및 2단계 작업 인계 시 | DL-0005: Redmine 라이브 MCP 도구 4종 검증 및 1단계 MVP 인수 완료 |
 | **[[DL-0007-dry-run-default-true|document/decision_log/DL-0007-dry-run-default-true.md]]** | `DL`, `보안`, `dry_run`, `fail-open` | • dry_run 파라미터 기본값 설정 확인 시 | DL-0007: dry_run 기본값을 true로 변경하여 보안 강화 |
+| **[[DL-0008-subagent-todo-completion-enforcement|document/decision_log/DL-0008-subagent-todo-completion-enforcement.md]]** | `DL`, `서브에이전트`, `todo`, `대기열`, `완료동기화`, `SOP` | • 서브에이전트 작업 완료 조건 및 todo.md 갱신 규칙 확인 시 | DL-0008: 서브에이전트 기능 커밋 시 TO-DO 대기열 완료([x]) 동기화 의무화 |
 
 ---
 
