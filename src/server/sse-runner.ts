@@ -77,6 +77,9 @@ export function createSSERouter(
       });
 
       await mcpServer.connect(transport);
+
+      const clientIp = (req.headers['x-forwarded-for'] as string) ?? req.ip;
+      logger.info(`SSE connection established`, { ip: clientIp, sessionId: transport.sessionId });
       
       transports.set(transport.sessionId, { 
         transport, 
@@ -98,6 +101,8 @@ export function createSSERouter(
       const session = transports.get(sessionId);
       
       if (session) {
+        const clientIp = (req.headers['x-forwarded-for'] as string) ?? req.ip;
+        logger.info(`Tool call received`, { ip: clientIp, sessionId });
         session.lastActive = Date.now();
         await session.transport.handlePostMessage(req, res);
       } else {
