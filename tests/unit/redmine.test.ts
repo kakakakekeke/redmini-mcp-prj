@@ -35,4 +35,37 @@ describe('RedmineClient', () => {
     expect(mockGet).toHaveBeenCalledTimes(2);
     expect(data.projects.length).toBe(101);
   });
+
+  describe('addIssueNote', () => {
+    it('should call PUT /issues/:id.json and normalize 204 No Content to {}', async () => {
+      const mockPut = vi.fn().mockResolvedValue({ status: 204, data: '' });
+      (client as any).api = { put: mockPut };
+
+      const result = await client.addIssueNote({
+        issue_id: 42,
+        notes: 'Test comment',
+        private_notes: true,
+      });
+
+      expect(mockPut).toHaveBeenCalledWith('/issues/42.json', {
+        issue: {
+          notes: 'Test comment',
+          private_notes: true,
+        },
+      });
+      expect(result).toEqual({});
+    });
+
+    it('should return response data when status is not 204', async () => {
+      const mockPut = vi.fn().mockResolvedValue({ status: 200, data: { issue: { id: 42 } } });
+      (client as any).api = { put: mockPut };
+
+      const result = await client.addIssueNote({
+        issue_id: 42,
+        notes: 'Test comment',
+      });
+
+      expect(result).toEqual({ issue: { id: 42 } });
+    });
+  });
 });

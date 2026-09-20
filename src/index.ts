@@ -8,6 +8,7 @@ import { getIssueDetailsHandler, getIssueDetailsSchema } from "./tools/get_issue
 import { searchIssuesHandler, searchIssuesSchema } from "./tools/search_issues.js";
 import { updateIssueHandler, updateIssueSchema } from "./tools/update_issue.js";
 import { createIssueHandler, createIssueSchema } from "./tools/create_issue.js";
+import { addIssueNoteHandler, addIssueNoteSchema } from "./tools/add_issue_note.js";
 
 // Factory function to create a new MCP Server instance per connection
 export function createRedmineMcpServer(headers: Record<string, string | string[] | undefined> = {}) {
@@ -44,6 +45,16 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     searchIssuesSchema.shape,
     async (args) => {
       const result = await searchIssuesHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "add_issue_note",
+    "지정한 일감에 댓글(저널)을 추가합니다. [주의: 쓰기 도구] 실제 Redmine 데이터가 변경되므로, 호출 전 반드시 작성할 댓글 내용(notes)을 사용자에게 미리 안내하고 확인(승인)을 받은 후 실행해야 합니다.",
+    addIssueNoteSchema.shape,
+    async (args) => {
+      const result = await addIssueNoteHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );

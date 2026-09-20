@@ -17,10 +17,8 @@ tags:
 > 2. **신규 등록 시 우선순위 검토**: 새로운 할 일을 추가할 때 무조건 맨 밑에 추가하지 마십시오. 작업의 기술적 종속성(Dependency)과 비즈니스 중요도를 분석하여 **가장 적절한 순서(위치)에 삽입**해야 합니다.
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
-
-- [ ] `feature/add-issue-note` : add_issue_note 도구 TDD 구현 (댓글/저널 추가, 낮은 리스크)
-
 ## ✅ 완료된 작업 (Done)
+- [x] `feature/add-issue-note` : add_issue_note 도구 TDD 구현 (댓글/저널 추가, 낮은 리스크)
 - [x] `feature/update-issue` : update_issue 도구 TDD 구현 (dry_run 가드, allowed_statuses 워크플로우 보호)
 - [x] `feature/create-issue` : create_issue 도구 TDD 구현 (dry_run 가드, Smart Name Resolver 연동, DL-0007 보안 조치)
 - [x] `feature/tool-descriptions` : MCP 도구 및 Zod 스키마에 자연어 설명(description) 보강
@@ -39,7 +37,7 @@ tags:
 - [x] `docs/test-architecture` : 테스트 아키텍처 ADR 추가 및 Worktree 가드레일 훅 적용
 - [x] `chore/setup-todo-queue` : todo.md를 Queue 형태로 리팩토링하고 pre-commit에 큐 강제 로직 추가
 - [x] `chore/update-todo-rules` : TO-DO 큐 관리에 대한 사용자 승인(Review) 강제 룰을 AGENTS.md와 todo.md에 추가
-- [x] 다중 에이전트 동시 작업용 Git Worktree SOP 수립 및 스킬(`.agents/skills/git-workflow`) 등록
+- [x] 다중 에이전트 동시 작업용 Git Worktree 정립 및 스킬(`.agents/skills/git-workflow`) 등록
 - [x] Husky 도입 및 Git Hook(`pre-commit`, `commit-msg`) 고도화 (main 브랜치 보호, 영향도 리뷰 태그 강제)
 - [x] 오픈소스 벤치마킹 및 라이선스, 아키텍처 리서치 (`redmine_mcp_research.md`)
 - [x] 조회 전용 1단계 MVP 도구 명세 확정 (`mcp_tools_spec.md`)
