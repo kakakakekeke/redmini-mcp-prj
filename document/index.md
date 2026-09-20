@@ -55,6 +55,7 @@ status: active
 | **[[DL-0011-security-logger|document/decision_log/DL-0011-security-logger.md]]** | `DL`, `로거`, `보안`, `logger`, `마스킹`, `masking`, `PII`, `API Key`, `stdio`, `stderr` | • 보안 로거 도입 및 개인정보/API Key 마스킹 정책 확인 시<br>• Stdio 채널 무결성 보장 및 로그 레벨 설정 참조 시 | DL-0011: 보안 로거(Security Logger) 설계 및 개인정보·API 키 마스킹 정책 |
 | **[[DL-0012-docker-deployment|document/decision_log/DL-0012-docker-deployment.md]]** | `DL`, `docker`, `도커`, `배포`, `Dockerfile`, `compose`, `SSE`, `healthcheck` | • Docker 컨테이너 빌드 및 배포 환경 구성 시<br>• 멀티 스테이지 빌드 및 보안(비루트) 설정 참조 시 | DL-0012: Dockerfile 멀티 스테이지 빌드 및 SSE 컨테이너 배포 환경 구축 |
 | **[[DL-0013-get-my-account-design|document/decision_log/DL-0013-get-my-account-design.md]]** | `DL`, `내계정`, `account`, `get_my_account`, `fallback`, `users_current` | • 내 계정 정보 조회(get_my_account) 도구 설계 및 사양 확인 시<br>• /my/account.json 및 /users/current.json Fallback 전략 참조 시 | DL-0013: 내 계정 정보 조회(get_my_account) 도구 및 Fallback 설계 |
+| **[[DL-0014-upload-attachment-tool-design|document/decision_log/DL-0014-upload-attachment-tool-design.md]]** | `DL`, `업로드`, `첨부`, `upload`, `attachment`, `token`, `uploads.json` | • 파일 업로드 및 토큰 발급(upload_attachment) 도구 설계 확인 시<br>• Base64 변환 및 Redmine 2단계 업로드 연동 참조 시 | DL-0014: 파일 업로드 및 첨부 토큰 발급(upload_attachment) 도구 설계 |
 
 ---
 

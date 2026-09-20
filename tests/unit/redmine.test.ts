@@ -397,4 +397,32 @@ it("should normalize 204 No Content or empty data to success message on update",
       });
     });
   });
+  describe("uploadFile", () => {
+    it("should call POST /uploads.json with binary content and headers", async () => {
+      const mockPost = vi.fn().mockResolvedValue({
+        data: { upload: { token: "7167.ed1074a1a2" } },
+      });
+      (client as any).api = { post: mockPost };
+
+      const content = Buffer.from("test file content");
+      const result = await client.uploadFile("test.txt", content);
+
+      expect(mockPost).toHaveBeenCalledWith("/uploads.json", content, {
+        params: { filename: "test.txt" },
+        headers: {
+          "Content-Type": "application/octet-stream",
+        },
+      });
+      expect(result).toEqual({ upload: { token: "7167.ed1074a1a2" } });
+    });
+
+    it("should throw error if api.post throws", async () => {
+      const mockPost = vi.fn().mockRejectedValue(new Error("Upload failed"));
+      (client as any).api = { post: mockPost };
+
+      await expect(
+        client.uploadFile("test.txt", "some content")
+      ).rejects.toThrow("Upload failed");
+    });
+  });
 });

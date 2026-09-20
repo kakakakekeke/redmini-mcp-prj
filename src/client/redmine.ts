@@ -400,4 +400,22 @@ export class RedmineClient {
       throw error;
     }
   }
+
+  async uploadFile(
+    filename: string,
+    content: Buffer | string,
+    contentType: string = "application/octet-stream"
+  ) {
+    try {
+      const { data } = await this.api.post("/uploads.json", content, {
+        params: { filename },
+        headers: {
+          "Content-Type": "application/octet-stream",
+        },
+      });
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
