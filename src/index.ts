@@ -7,6 +7,7 @@ import { getProjectsHandler, getProjectsSchema } from "./tools/get_projects.js";
 import { getIssueDetailsHandler, getIssueDetailsSchema } from "./tools/get_issue_details.js";
 import { searchIssuesHandler, searchIssuesSchema } from "./tools/search_issues.js";
 import { updateIssueHandler, updateIssueSchema } from "./tools/update_issue.js";
+import { createIssueHandler, createIssueSchema } from "./tools/create_issue.js";
 
 // Factory function to create a new MCP Server instance per connection
 export function createRedmineMcpServer(headers: Record<string, string | string[] | undefined> = {}) {
@@ -53,6 +54,16 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     updateIssueSchema.shape,
     async (args) => {
       const result = await updateIssueHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "create_issue",
+    "새 일감을 생성합니다. 기본값이 true인 dry_run 파라미터를 통해 안전한 미리보기를 제공합니다. 실제 생성을 원할 경우에만 명시적으로 false로 전달하세요.",
+    createIssueSchema.shape,
+    async (args) => {
+      const result = await createIssueHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );

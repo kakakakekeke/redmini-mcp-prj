@@ -120,6 +120,15 @@ export class RedmineClient {
     return data;
   }
 
+  async createIssue(payload: any) {
+    try {
+      const { data } = await this.api.post('/issues.json', payload);
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getUsers() {
     let offset = 0;
     const limit = 100;
