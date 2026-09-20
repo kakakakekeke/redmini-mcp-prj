@@ -42,6 +42,11 @@ export interface CreateOrUpdateWikiResult {
   wiki_page?: Record<string, any>;
 }
 
+export interface GetMyAccountParams {
+  include_memberships?: boolean;
+  include_groups?: boolean;
+}
+
 export class RedmineClient {
   private api: AxiosInstance;
 
@@ -259,4 +264,26 @@ export class RedmineClient {
       throw error;
     }
   }
+  async getMyAccount(params?: GetMyAccountParams) {
+    const includes: string[] = [];
+    if (params?.include_memberships) includes.push("memberships");
+    if (params?.include_groups) includes.push("groups");
+
+    const queryParams: Record<string, unknown> = {};
+    if (includes.length > 0) {
+      queryParams.include = includes.join(",");
+    }
+
+    try {
+      const { data } = await this.api.get("/my/account.json", { params: queryParams });
+      return data;
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        const { data } = await this.api.get("/users/current.json", { params: queryParams });
+        return data;
+      }
+      throw error;
+    }
+  }
+
 }
