@@ -19,6 +19,14 @@ export interface GetProjectsParams {
   include_archived?: boolean;
 }
 
+export interface SearchWikiParams {
+  project_id?: string;
+  title?: string;
+  query?: string;
+  include_attachments?: boolean;
+  limit?: number;
+}
+
 export class RedmineClient {
   private api: AxiosInstance;
 
@@ -162,6 +170,37 @@ export class RedmineClient {
     } catch (error) {
       throw error;
     }
+  }
+
+  async searchWiki(params: SearchWikiParams) {
+    const { project_id, title, query, include_attachments, limit } = params;
+
+    if (!project_id) {
+      throw new Error("project_id is required for wiki search");
+    }
+
+    if (title) {
+      const queryParams: Record<string, unknown> = {
+        include: include_attachments ? "attachments" : undefined,
+      };
+      const { data } = await this.api.get(`/projects/${project_id}/wiki/${encodeURIComponent(title)}.json`, {
+        params: queryParams,
+      });
+      return { wiki_pages: [data.wiki_page || data] };
+    }
+
+    const queryParams: Record<string, unknown> = {
+      q: query || "",
+      limit: limit ?? 10,
+      include: include_attachments ? "attachments" : undefined,
+    };
+
+    const { data } = await this.api.get(`/projects/${project_id}/wiki/index.json`, {
+      params: queryParams,
+    });
+
+    const wikiPages = data.wiki_pages || data.pages || [];
+    return { wiki_pages: wikiPages.slice(0, limit ?? 10) };
   }
 
   async getTimeEntryActivities() {
