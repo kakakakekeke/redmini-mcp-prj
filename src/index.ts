@@ -49,7 +49,7 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
 
   server.tool(
     "create_issue",
-    "새 일감을 생성합니다. dry_run 파라미터를 통해 미리보기를 지원합니다.",
+    "새 일감을 생성합니다. 기본값이 true인 dry_run 파라미터를 통해 안전한 미리보기를 제공합니다. 실제 생성을 원할 경우에만 명시적으로 false로 전달하세요.",
     createIssueSchema.shape,
     async (args) => {
       const result = await createIssueHandler(args as any, client);

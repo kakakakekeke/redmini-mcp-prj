@@ -48,6 +48,7 @@ status: active
 | **[[setup_and_deployment|document/setup_and_deployment.md]]** | `설정`, `배포`, `연동`, `setup`, `deployment`, `claude`, `cursor`, `stdio`, `sse`, `환경변수` | • Claude Desktop 또는 Cursor IDE에 MCP 서버 연동 설정 시<br>• Stdio 또는 SSE(HTTP) 전송 모드로 서버 배포 시<br>• Redmine REST API 활성화 및 API Key 발급 방법 확인 시 | Claude Desktop 및 Cursor IDE 연동 가이드, 배포 모드(Stdio/SSE) 설정 및 문제 해결 |
 | **[[git_workflow_sop|document/sop/git_workflow_sop.md]]** | `SOP`, `git`, `워크플로우`, `브랜치`, `worktree`, `멀티에이전트` | • 협업, 브랜치 생성, 커밋 작성, 워크트리 구성 시 | 브랜치 관리, 커밋 메시지 컨벤션 및 다중 에이전트 동시 작업을 위한 Git Worktree 절차서 |
 | **[[DL-0005-live-tool-verification|document/decision_log/DL-0005-live-tool-verification.md]]** | `DL`, `라이브검증`, `테스트`, `ping`, `get_projects`, `search_issues`, `get_issue_details` | • 실제 Redmine 환경 연동 상태 및 도구 4종 검증 결과 확인 시<br>• 1단계(MVP 조회 전용) 완료 판정 및 2단계 작업 인계 시 | DL-0005: Redmine 라이브 MCP 도구 4종 검증 및 1단계 MVP 인수 완료 |
+| **[[DL-0007-dry-run-default-true|document/decision_log/DL-0007-dry-run-default-true.md]]** | `DL`, `보안`, `dry_run`, `fail-open` | • dry_run 파라미터 기본값 설정 확인 시 | DL-0007: dry_run 기본값을 true로 변경하여 보안 강화 |
 
 ---
 

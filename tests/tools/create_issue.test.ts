@@ -16,10 +16,18 @@ describe('create_issue tool', () => {
       expect(() => createIssueSchema.parse({ project_id: '1' })).toThrow();
     });
 
-    it('should set dry_run default to false', () => {
+    it('should reject invalid due_date', () => {
+      expect(() => createIssueSchema.parse({ project_id: '1', subject: 'Test', due_date: '2023/01/01' })).toThrow();
+    });
+
+    it('should reject negative estimated_hours', () => {
+      expect(() => createIssueSchema.parse({ project_id: '1', subject: 'Test', estimated_hours: -5 })).toThrow();
+    });
+
+    it('should set dry_run default to true', () => {
       const args = { project_id: '1', subject: 'Test' };
       const parsed = createIssueSchema.parse(args);
-      expect(parsed.dry_run).toBe(false);
+      expect(parsed.dry_run).toBe(true);
     });
   });
 
@@ -34,7 +42,7 @@ describe('create_issue tool', () => {
         getUsers: vi.fn().mockResolvedValue({ users: [] }),
       };
       
-      const args = { project_id: 'test-project', subject: 'Test', dry_run: true };
+      const args = { project_id: 'test-project', subject: 'Test' };
       const parsedArgs = createIssueSchema.parse(args);
       
       const result = await createIssueHandler(parsedArgs, mockClient as any);
@@ -49,12 +57,12 @@ describe('create_issue tool', () => {
         createIssue: vi.fn().mockResolvedValue({ issue: { id: 123 } }),
         getProjects: vi.fn().mockResolvedValue({ projects: [] }),
         getTrackers: vi.fn().mockResolvedValue({ trackers: [{ id: 2, name: '결함' }] }),
-        getStatuses: vi.fn().mockResolvedValue({ issue_statuses: [] }),
-        getPriorities: vi.fn().mockResolvedValue({ issue_priorities: [] }),
-        getUsers: vi.fn().mockResolvedValue({ users: [] }),
+        getStatuses: vi.fn().mockResolvedValue({ issue_statuses: [{ id: 3, name: '진행중' }] }),
+        getPriorities: vi.fn().mockResolvedValue({ issue_priorities: [{ id: 4, name: '높음' }] }),
+        getUsers: vi.fn().mockResolvedValue({ users: [{ id: 5, firstname: '홍', lastname: '길동', login: 'hong' }] }),
       };
       
-      const args = { project_id: '1', subject: 'Test', tracker: '결함' };
+      const args = { project_id: '1', subject: 'Test', tracker: '결함', status: '진행중', priority: '높음', assignee: '홍 길동', dry_run: false };
       const parsedArgs = createIssueSchema.parse(args);
       
       const result = await createIssueHandler(parsedArgs, mockClient as any);
@@ -62,7 +70,10 @@ describe('create_issue tool', () => {
       expect(mockClient.createIssue).toHaveBeenCalledWith({ issue: expect.objectContaining({
         project_id: '1',
         subject: 'Test',
-        tracker_id: 2
+        tracker_id: 2,
+        status_id: 3,
+        priority_id: 4,
+        assigned_to_id: 5
       }) });
       expect(result).toEqual({ issue: { id: 123 } });
     });
