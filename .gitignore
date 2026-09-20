@@ -108,11 +108,7 @@ dist
 Thumbs.db
 
 # VS Code settings / workspace
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/
 *.code-workspace
 
 # Agent generated artifacts/scratch
