@@ -1,7 +1,7 @@
 ---
 title: "프로젝트 할 일 및 진행 현황 (TO-DO)"
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-09-20
 tags:
   - todo
   - tracker
