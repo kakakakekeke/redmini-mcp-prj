@@ -397,4 +397,72 @@ it("should normalize 204 No Content or empty data to success message on update",
       });
     });
   });
+
+  describe("Watchers API", () => {
+    it("should call GET /issues/:id.json?include=watchers and return watchers array", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: {
+          issue: {
+            id: 10,
+            watchers: [
+              { id: 1, name: "Admin" },
+              { id: 2, name: "User" },
+            ],
+          },
+        },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getWatchers(10);
+      expect(mockGet).toHaveBeenCalledWith("/issues/10.json", {
+        params: { include: "watchers" },
+      });
+      expect(result).toEqual([
+        { id: 1, name: "Admin" },
+        { id: 2, name: "User" },
+      ]);
+    });
+
+    it("should return empty array if watchers not present in issue data", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { issue: { id: 10 } },
+      });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getWatchers(10);
+      expect(result).toEqual([]);
+    });
+
+    it("should call POST /issues/:id/watchers.json with user_id", async () => {
+      const mockPost = vi.fn().mockResolvedValue({ status: 204, data: "" });
+      (client as any).api = { post: mockPost };
+
+      const result = await client.addWatcher(10, 5);
+      expect(mockPost).toHaveBeenCalledWith("/issues/10/watchers.json", {
+        user_id: 5,
+      });
+      expect(result).toEqual({
+        message: "User 5 added as watcher to issue 10 successfully",
+      });
+    });
+
+    it("should return response.data if POST /issues/:id/watchers.json returns data", async () => {
+      const mockPost = vi.fn().mockResolvedValue({ status: 200, data: { success: true } });
+      (client as any).api = { post: mockPost };
+
+      const result = await client.addWatcher(10, 5);
+      expect(result).toEqual({ success: true });
+    });
+
+    it("should call DELETE /issues/:id/watchers/:user_id.json and return success message", async () => {
+      const mockDelete = vi.fn().mockResolvedValue({ status: 200, data: "" });
+      (client as any).api = { delete: mockDelete };
+
+      const result = await client.removeWatcher(10, 5);
+      expect(mockDelete).toHaveBeenCalledWith("/issues/10/watchers/5.json");
+      expect(result).toEqual({
+        message: "User 5 removed from watchers of issue 10 successfully",
+      });
+    });
+  });
 });
