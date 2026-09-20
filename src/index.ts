@@ -12,6 +12,7 @@ import { addIssueNoteHandler, addIssueNoteSchema } from "./tools/add_issue_note.
 import { logTimeHandler, logTimeSchema } from "./tools/logTime.js";
 import { searchWikiHandler, searchWikiSchema } from "./tools/search_wiki.js";
 import { createOrUpdateWikiHandler, createOrUpdateWikiSchema } from "./tools/create_or_update_wiki.js";
+import { manageIssueRelationHandler, manageIssueRelationSchema } from "./tools/manage_issue_relation.js";
 import { logger } from "./utils/logger.js";
 
 
@@ -112,6 +113,16 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     createOrUpdateWikiSchema.shape,
     async (args) => {
       const result = await createOrUpdateWikiHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "manage_issue_relation",
+    "일감 간의 관계(블록, 선행, 후행, 관련, 중복 등)를 목록 조회, 생성 또는 삭제합니다. 생성 및 삭제 시 기본값이 true인 dry_run 파라미터를 통해 안전한 미리보기를 제공하며, 실제 변경을 원할 경우에만 명시적으로 dry_run: false로 전달하세요.",
+    manageIssueRelationSchema.shape,
+    async (args) => {
+      const result = await manageIssueRelationHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );
