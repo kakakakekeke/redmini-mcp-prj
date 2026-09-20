@@ -1,6 +1,7 @@
 import { Router, Response } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { logger } from "../utils/logger.js";
 
 export interface SSERouterOptions {
   heartbeatIntervalMs?: number;
@@ -30,6 +31,7 @@ export function createSSERouter(
         const now = Date.now();
         for (const [sessionId, session] of transports.entries()) {
           if (now - session.lastActive > sessionTtlMs) {
+            logger.debug(`Closing expired SSE session: ${sessionId}`);
             transports.delete(sessionId);
             
             session.transport.close().catch(() => {});
@@ -85,6 +87,7 @@ export function createSSERouter(
 
       startHeartbeat();
     } catch (err) {
+      logger.error("Error establishing SSE connection", err);
       next(err);
     }
   });
@@ -98,9 +101,11 @@ export function createSSERouter(
         session.lastActive = Date.now();
         await session.transport.handlePostMessage(req, res);
       } else {
+        logger.warn(`SSE connection not found or expired: ${sessionId}`);
         res.status(404).send("SSE connection not found or expired");
       }
     } catch (err) {
+      logger.error("Error processing SSE message", err);
       next(err);
     }
   });

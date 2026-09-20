@@ -12,6 +12,7 @@ import { addIssueNoteHandler, addIssueNoteSchema } from "./tools/add_issue_note.
 import { logTimeHandler, logTimeSchema } from "./tools/logTime.js";
 import { searchWikiHandler, searchWikiSchema } from "./tools/search_wiki.js";
 import { createOrUpdateWikiHandler, createOrUpdateWikiSchema } from "./tools/create_or_update_wiki.js";
+import { logger } from "./utils/logger.js";
 
 
 // Factory function to create a new MCP Server instance per connection
@@ -138,21 +139,21 @@ async function main() {
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
     
     app.listen(port, () => {
-      console.error(`Redmine MCP Server is running on SSE mode at http://localhost:${port}`);
+      logger.info(`Redmine MCP Server is running on SSE mode at http://localhost:${port}`);
     });
   } else {
     // For stdio, we don't have request headers, so it will fall back to process.env.REDMINE_API_KEY
     const server = createRedmineMcpServer({});
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Redmine MCP Server is running on stdio!");
+    logger.info("Redmine MCP Server is running on stdio!");
   }
 }
 
 import { fileURLToPath } from "url";
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((err) => {
-    console.error("Failed to start server", err);
+    logger.error("Failed to start server", err);
     process.exit(1);
   });
 }
