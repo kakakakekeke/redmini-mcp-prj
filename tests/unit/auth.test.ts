@@ -35,37 +35,38 @@ describe("Auth Middleware", () => {
       expect(client).toBeInstanceOf(RedmineClient);
     });
 
-    it("should throw error if header is not provided and ALLOW_SERVER_KEY_FALLBACK is not set/false in HTTP mode", () => {
+    it("should throw error if header is not provided in HTTP mode", () => {
       vi.mocked(configModule.loadConfig).mockReturnValue({ REDMINE_URL: "http://redmine.test", REDMINE_API_KEY: "fallback_key" });
-      delete process.env.ALLOW_SERVER_KEY_FALLBACK;
       delete process.env.TRANSPORT;
       const reqHeaders = {};
       
       expect(() => getAuthClient(reqHeaders)).toThrow("Authentication failed: Missing Redmine API Key");
     });
 
-    it("should fallback to REDMINE_API_KEY if ALLOW_SERVER_KEY_FALLBACK is true", () => {
+    it("should throw error in HTTP mode even if ALLOW_SERVER_KEY_FALLBACK=true or REDMINE_API_KEY is configured", () => {
       vi.mocked(configModule.loadConfig).mockReturnValue({ REDMINE_URL: "http://redmine.test", REDMINE_API_KEY: "fallback_key" });
       process.env.ALLOW_SERVER_KEY_FALLBACK = "true";
+      delete process.env.TRANSPORT;
       const reqHeaders = {};
       
-      const client = getAuthClient(reqHeaders);
-      expect(client).toBeInstanceOf(RedmineClient);
+      expect(() => getAuthClient(reqHeaders)).toThrow("Authentication failed: Missing Redmine API Key");
+
+      process.env.TRANSPORT = "http";
+      expect(() => getAuthClient(reqHeaders)).toThrow("Authentication failed: Missing Redmine API Key");
     });
 
     it("should fallback to REDMINE_API_KEY if TRANSPORT is stdio", () => {
       vi.mocked(configModule.loadConfig).mockReturnValue({ REDMINE_URL: "http://redmine.test", REDMINE_API_KEY: "fallback_key" });
       process.env.TRANSPORT = "stdio";
-      delete process.env.ALLOW_SERVER_KEY_FALLBACK;
       const reqHeaders = {};
       
       const client = getAuthClient(reqHeaders);
       expect(client).toBeInstanceOf(RedmineClient);
     });
 
-    it("should throw error if no API key is available in header and env", () => {
+    it("should throw error if no API key is available in header and env even in stdio mode", () => {
       vi.mocked(configModule.loadConfig).mockReturnValue({ REDMINE_URL: "http://redmine.test" }); 
-      process.env.ALLOW_SERVER_KEY_FALLBACK = "true";
+      process.env.TRANSPORT = "stdio";
       const reqHeaders = {};
       
       expect(() => getAuthClient(reqHeaders)).toThrow("Authentication failed: Missing Redmine API Key");

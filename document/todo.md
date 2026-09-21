@@ -18,7 +18,7 @@ tags:
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
 ### 🚨 P1 — 즉시 조치 (보안 감사 기반)
-- [ ] 1. `fix/security-disable-http-key-fallback` : HTTP 모드에서 REDMINE_API_KEY 폴백 완전 차단 및 ALLOW_SERVER_KEY_FALLBACK 옵션 폐기 — [[DL-0024-disable-http-server-key-fallback]]
+* (현재 등록된 모든 P1 보안 작업이 완료되었습니다.)
 
 ### ⚠️ P2 — 단기 조치 (보안 감사 기반, 1-2주)
 * (현재 등록된 모든 P2 보안 작업이 완료되었습니다.)
@@ -27,6 +27,7 @@ tags:
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
 
 ## ✅ 완료된 작업 (Done)
+- [x] `fix/security-disable-http-key-fallback` : HTTP 모드에서 REDMINE_API_KEY 폴백 완전 차단 및 ALLOW_SERVER_KEY_FALLBACK 옵션 폐기 — [[DL-0024-disable-http-server-key-fallback]]
 - [x] `fix/security-http-auth-middleware` : HTTP 모드 `/mcp` 엔드포인트 Bearer 토큰 인증 미들웨어 추가, `REDMINE_API_KEY` 폴백을 환경변수 플래그로 제어 — [[security_audit_report]] 3-2항, [[DL-0020-http-auth-middleware]]
 - [x] `fix/security-prompt-injection-defense` : 조회 도구(`get_issue_details`, `search_wiki` 등) 응답 본문에서 간접 프롬프트 주입 의심 패턴 탐지 레이어 추가 — [[security_audit_report]] 3-1항, [[DL-0021-prompt-injection-defense]]
 - [x] `chore/security-resolver-ttl-cache` : `SmartNameResolver` 사용자 목록에 TTL 캐시 적용 (DoS 방지 및 정보 과다 노출 완화) — [[security_audit_report]] 2-5항, [[DL-0022-resolver-ttl-cache]]

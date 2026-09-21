@@ -12,8 +12,7 @@ export function getAuthClient(headers: Record<string, string | string[] | undefi
   let apiKey = userApiKey;
   if (!apiKey) {
     const isStdio = process.env.TRANSPORT === "stdio";
-    const allowFallback = process.env.ALLOW_SERVER_KEY_FALLBACK === "true";
-    if (isStdio || allowFallback) {
+    if (isStdio) {
       apiKey = config.REDMINE_API_KEY;
     }
   }
