@@ -81,6 +81,28 @@ describe('RedmineClient', () => {
 
       await expect(client.getProject(999)).rejects.toThrow("Project not found");
     });
+
+    it("should encode path traversal characters using encodeURIComponent", async () => {
+      const mockGet = vi.fn().mockResolvedValue({ data: { project: { id: 1 } } });
+      (client as any).api = { get: mockGet };
+
+      await client.getProject("../../users/current");
+      expect(mockGet).toHaveBeenCalledWith(
+        "/projects/..%2F..%2Fusers%2Fcurrent.json",
+        expect.any(Object)
+      );
+    });
+
+    it("should trim projectId before requesting", async () => {
+      const mockGet = vi.fn().mockResolvedValue({ data: { project: { id: 1 } } });
+      (client as any).api = { get: mockGet };
+
+      await client.getProject("  test-proj  ");
+      expect(mockGet).toHaveBeenCalledWith(
+        "/projects/test-proj.json",
+        expect.any(Object)
+      );
+    });
   });
 
   describe('addIssueNote', () => {

@@ -39,6 +39,15 @@ describe('SmartNameResolver', () => {
     expect(resolver.resolveProject(undefined as any)).toBeUndefined();
   });
 
+  it('should index both project name and identifier', async () => {
+    client.getProjects = vi.fn().mockResolvedValue({
+      projects: [{ id: 10, name: "Infrastructure Core", identifier: "infra-core" }],
+    });
+    await resolver.load(true);
+    expect(resolver.resolveProject("Infrastructure Core")).toBe(10);
+    expect(resolver.resolveProject("infra-core")).toBe(10);
+  });
+
   it('should resolve tracker by name', async () => {
     await resolver.load();
     expect(resolver.resolveTracker('Bug')).toBe(1);

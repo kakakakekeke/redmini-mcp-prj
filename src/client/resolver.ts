@@ -39,6 +39,9 @@ export class SmartNameResolver {
     if (results[0].status === "fulfilled" && results[0].value) {
       for (const p of results[0].value.projects || []) {
         this.projects[p.name.toLowerCase()] = p.id;
+        if (p.identifier) {
+          this.projects[p.identifier.toLowerCase()] = p.id;
+        }
       }
     }
 

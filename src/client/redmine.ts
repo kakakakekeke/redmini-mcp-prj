@@ -222,8 +222,9 @@ export class RedmineClient {
     const queryParams: Record<string, any> = {
       include: params?.include !== undefined ? params.include : defaultInclude,
     };
+    const encodedId = encodeURIComponent(String(projectId).trim());
     try {
-      const { data } = await this.api.get(`/projects/${projectId}.json`, { params: queryParams });
+      const { data } = await this.api.get(`/projects/${encodedId}.json`, { params: queryParams });
       return data;
     } catch (error) {
       throw error;
