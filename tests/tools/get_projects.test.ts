@@ -19,6 +19,27 @@ describe("get_projects tool", () => {
       expect(getProjectsSchema.parse({ project_id: 123 }).project_id).toBe(123);
       expect(getProjectsSchema.parse({}).project_id).toBeUndefined();
     });
+
+    it("should reject project_id with path traversal characters (/ or \\ or ..)", () => {
+      expect(() => getProjectsSchema.parse({ project_id: "../../users/current" })).toThrow();
+      expect(() => getProjectsSchema.parse({ project_id: "foo/bar" })).toThrow();
+      expect(() => getProjectsSchema.parse({ project_id: "foo\\bar" })).toThrow();
+    });
+
+    it("should reject empty or whitespace-only project_id", () => {
+      expect(() => getProjectsSchema.parse({ project_id: "   " })).toThrow();
+      expect(() => getProjectsSchema.parse({ project_id: "" })).toThrow();
+    });
+
+    it("should reject project_id exceeding 255 characters", () => {
+      const longId = "a".repeat(256);
+      expect(() => getProjectsSchema.parse({ project_id: longId })).toThrow();
+    });
+
+    it("should reject non-positive project_id numbers", () => {
+      expect(() => getProjectsSchema.parse({ project_id: 0 })).toThrow();
+      expect(() => getProjectsSchema.parse({ project_id: -5 })).toThrow();
+    });
   });
 
   describe("Handler Logic", () => {
@@ -132,6 +153,68 @@ describe("get_projects tool", () => {
       expect(result).toEqual({
         project: { id: 7, identifier: "my-slug", name: "My Slug" },
       });
+    });
+
+    it("should return structured error when project is not found (404)", async () => {
+      const err: any = new Error("Request failed with status code 404");
+      err.response = { status: 404 };
+      const mockClient = {
+        getProjects: vi.fn().mockResolvedValue({ projects: [] }),
+        getTrackers: vi.fn().mockResolvedValue({ trackers: [] }),
+        getStatuses: vi.fn().mockResolvedValue({ issue_statuses: [] }),
+        getPriorities: vi.fn().mockResolvedValue({ issue_priorities: [] }),
+        getUsers: vi.fn().mockResolvedValue({ users: [] }),
+        getProject: vi.fn().mockRejectedValue(err),
+      };
+
+      const result = await getProjectsHandler({ project_id: "non-existent" } as any, mockClient as any);
+      expect(result).toEqual({ error: "해당 프로젝트를 찾을 수 없습니다: non-existent" });
+    });
+
+    it("should return structured error when project access is forbidden (403)", async () => {
+      const err: any = new Error("Request failed with status code 403");
+      err.response = { status: 403 };
+      const mockClient = {
+        getProject: vi.fn().mockRejectedValue(err),
+      };
+
+      const result = await getProjectsHandler({ project_id: 42 } as any, mockClient as any);
+      expect(result).toEqual({ error: "해당 프로젝트에 접근할 권한이 없습니다 (403 Forbidden)" });
+    });
+
+    it("should reuse resolver instance on client to preserve TTL cache across calls", async () => {
+      const mockClient = {
+        getProjects: vi.fn().mockResolvedValue({
+          projects: [{ id: 99, name: "Sample Project" }],
+        }),
+        getTrackers: vi.fn().mockResolvedValue({ trackers: [] }),
+        getStatuses: vi.fn().mockResolvedValue({ issue_statuses: [] }),
+        getPriorities: vi.fn().mockResolvedValue({ issue_priorities: [] }),
+        getUsers: vi.fn().mockResolvedValue({ users: [] }),
+        getProject: vi.fn().mockResolvedValue({
+          project: { id: 99, name: "Sample Project" },
+        }),
+      };
+
+      await getProjectsHandler({ project_id: "Sample Project" } as any, mockClient as any);
+      const firstResolver = (mockClient as any).resolver;
+      expect(firstResolver).toBeDefined();
+
+      await getProjectsHandler({ project_id: "Sample Project" } as any, mockClient as any);
+      expect((mockClient as any).resolver).toBe(firstResolver);
+      expect(mockClient.getProjects).toHaveBeenCalledTimes(1);
+    });
+
+    it("should redact user.api_key to [REDACTED] if present in project response (defense-in-depth)", async () => {
+      const mockClient = {
+        getProject: vi.fn().mockResolvedValue({
+          project: { id: 1, name: "Proj" },
+          user: { id: 1, api_key: "secret_token_123" },
+        }),
+      };
+
+      const result: any = await getProjectsHandler({ project_id: 1 } as any, mockClient as any);
+      expect(result.user.api_key).toBe("[REDACTED]");
     });
   });
 });
