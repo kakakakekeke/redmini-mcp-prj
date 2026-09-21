@@ -1,7 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import express from "express";
-import { createSSERouter } from "./server/sse-runner.js";
+import cors from "cors";
+import { createStreamableHttpRouter } from "./server/streamable-http-runner.js";
 import { getAuthClient } from "./middleware/auth.js";
 import { getProjectsHandler, getProjectsSchema } from "./tools/get_projects.js";
 import { getIssueDetailsHandler, getIssueDetailsSchema } from "./tools/get_issue_details.js";
@@ -219,15 +220,17 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
 }
 
 async function main() {
-  const transportMode = process.env.TRANSPORT === "sse" ? "sse" : "stdio";
+  const isStdio = process.env.TRANSPORT === "stdio";
 
-  if (transportMode === "sse") {
+  if (!isStdio) {
     const app = express();
-    app.use("/mcp", createSSERouter(createRedmineMcpServer));
+    app.use(cors());
+    app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
+    app.all("/mcp", createStreamableHttpRouter(createRedmineMcpServer));
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
-    
+
     app.listen(port, () => {
-      logger.info(`Redmine MCP Server is running on SSE mode at http://localhost:${port}`);
+      logger.info(`Redmine MCP Server is running on Streamable HTTP mode at http://localhost:${port}`);
     });
   } else {
     // For stdio, we don't have request headers, so it will fall back to process.env.REDMINE_API_KEY

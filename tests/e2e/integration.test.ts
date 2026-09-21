@@ -4,13 +4,9 @@ import { Server } from "http";
 import { spawn, ChildProcess } from "child_process";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-import EventSource from "eventsource";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import path from "path";
 import { fileURLToPath } from "url";
-
-// Set EventSource for the Node environment
-global.EventSource = EventSource as any;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,6 +86,7 @@ describe("Redmine MCP Server E2E Integration Tests", () => {
         args: ["tsx", SRC_INDEX],
         env: {
           ...process.env,
+          TRANSPORT: "stdio",
           REDMINE_URL: redmineUrl,
           REDMINE_API_KEY: "test_api_key"
         }
@@ -127,35 +124,29 @@ describe("Redmine MCP Server E2E Integration Tests", () => {
         arguments: { issue_id: 9999999 }
       });
       
-      
       expect(result.content[0].text).toContain("해당 일감을 찾을 수 없습니다");
     });
   });
 
-  describe("[TC-03] HTTP (SSE) 기반 다중 사용자 접속", () => {
+  describe("[TC-03] HTTP (Streamable HTTP) 기반 다중 사용자 접속", () => {
     let client: Client;
-    let transport: SSEClientTransport;
+    let transport: StreamableHTTPClientTransport;
     let child: ChildProcess;
-    let ssePort: number = 33333; // Fixed port for testing
+    let httpPort: number = 33333; // Fixed port for testing
 
     beforeAll(async () => {
       child = spawn("npx", ["tsx", SRC_INDEX], {
         env: {
           ...process.env,
-          TRANSPORT: "sse",
-          PORT: ssePort.toString(),
+          TRANSPORT: "http",
+          PORT: httpPort.toString(),
           REDMINE_URL: redmineUrl
         }
       });
 
       await new Promise(r => setTimeout(r, 2000));
 
-      transport = new SSEClientTransport(new URL(`http://localhost:${ssePort}/mcp/sse`), {
-        eventSourceInit: {
-          headers: {
-            "x-redmine-api-key": "Token_A"
-          }
-        },
+      transport = new StreamableHTTPClientTransport(new URL(`http://localhost:${httpPort}/mcp`), {
         requestInit: {
           headers: {
             "x-redmine-api-key": "Token_A"

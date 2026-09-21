@@ -1,7 +1,7 @@
 ---
 title: Redmine MCP 서버 설정 및 클라이언트 연동 가이드 (Setup and Deployment)
 created: 2026-09-19
-updated: 2026-09-20
+updated: 2026-09-21
 tags:
   - setup
   - deployment
@@ -24,7 +24,7 @@ related:
 
 > [!abstract] 문서 개요
 > 본 문서는 **Redmine MCP(Model Context Protocol) 서버**의 설치, 빌드, 환경 설정 및 대표적인 LLM 클라이언트(**Claude Desktop**, **Cursor IDE**)와의 연동 절차를 안내합니다.
-> 개인 PC에서 실행하는 **단일 사용자 표준 입출력(Stdio)** 방식과 부서 단위로 공용 운영하는 **HTTP 서버-전송 이벤트(SSE)** 방식을 모두 지원합니다.
+> 개인 PC에서 실행하는 **단일 사용자 표준 입출력(Stdio)** 방식과 부서 단위로 공용 운영하는 **HTTP Streamable HTTP** 방식을 모두 지원합니다.
 
 ---
 
@@ -39,15 +39,15 @@ flowchart TD
         LocalServer -- "REST API (API Key)" --> RedmineInstance["Redmine 인스턴스"]
     end
 
-    subgraph Central_Mode["부서 공용 배포 (HTTP/SSE 모드)"]
-        Client2["사용자 A (Cursor)"] -- "SSE + X-Redmine-API-Key: A" --> CentralServer["Redmine MCP Central Server (:3000)"]
-        Client3["사용자 B (Claude)"] -- "SSE + X-Redmine-API-Key: B" --> CentralServer
+    subgraph Central_Mode["부서 공용 배포 (Streamable HTTP 모드)"]
+        Client2["사용자 A (Claude)"] -- "HTTP /mcp + X-Redmine-API-Key: A" --> CentralServer["Redmine MCP Central Server (:3000)"]
+        Client3["사용자 B (Agent)"] -- "HTTP /mcp + X-Redmine-API-Key: B" --> CentralServer
         CentralServer -- "개인별 위임 호출" --> RedmineInstance
     end
 ```
 
-* **Stdio 모드**: 로컬 데스크톱 애플리케이션(Claude Desktop, Cursor)이 MCP 서버 프로세스를 직접 자식 프로세스로 구동하여 통신합니다. (개인 로컬용)
-* **HTTP/SSE 모드**: 중앙 서버에 상시 구동해 두고, 부서원들이 네트워크를 통해 연결합니다. 클라이언트 요청 헤더(`X-Redmine-API-Key`)를 통해 사용자별 권한을 위임 처리합니다. (부서 공용)
+* **Stdio 모드**: 로컬 데스크톱 애플리케이션(Claude Desktop, Cursor)이 MCP 서버 프로세스를 직접 자식 프로세스로 구동하여 통신합니다. (개인 로컬용 및 Cursor 권장)
+* **Streamable HTTP 모드**: 중앙 서버에 상시 구동해 두고, 부서원들이 네트워크(`/mcp`)를 통해 연결합니다. 클라이언트 요청 헤더(`X-Redmine-API-Key`)를 통해 사용자별 권한을 위임 처리합니다. (부서 공용)
 
 자세한 내부 구조는 [[architecture_design|아키텍처 설계서]]를 참조하십시오.
 
@@ -101,10 +101,10 @@ REDMINE_URL=https://redmine.your-domain.com
 # 필수(Stdio 모드): 기본 Redmine 사용자 API Key
 REDMINE_API_KEY=your_redmine_api_key_here
 
-# 선택: 전송 모드 설정 ('stdio' 또는 'sse', 기본값: 'stdio')
-TRANSPORT=stdio
+# 선택: 전송 모드 설정 ('stdio' 또는 'http', 기본값: 'http')
+TRANSPORT=http
 
-# 선택: SSE 모드 실행 시 바인딩할 포트 (기본값: 3000)
+# 선택: HTTP 모드 실행 시 바인딩할 포트 (기본값: 3000)
 PORT=3000
 ```
 
@@ -172,7 +172,10 @@ Claude Desktop 앱에서 로컬 MCP 서버를 등록하여 대화 창에서 Redm
 
 Cursor IDE는 에이전트 모드 및 채팅 환경에서 MCP 도구를 완벽히 지원합니다.
 
-### 6.1. Stdio 방식으로 연동하기
+> [!tip] Cursor IDE 연동 권장 사항
+> Cursor IDE는 최신 Streamable HTTP 사양과의 호환성 및 네트워크 지연 최소화를 위해 **Stdio (command) 방식 연동을 가장 강력히 권장**합니다.
+
+### 6.1. Stdio 방식으로 연동하기 (강력 권장)
 1. Cursor를 실행하고 **Settings (Cmd + , 또는 설정 아이콘)**를 엽니다.
 2. **Features > MCP Servers** 메뉴로 이동합니다.
 3. **+ Add New MCP Server** 버튼을 클릭합니다.
@@ -180,39 +183,39 @@ Cursor IDE는 에이전트 모드 및 채팅 환경에서 MCP 도구를 완벽�
    - **Name**: `redmine`
    - **Type**: `command`
    - **Command**: `node /절대경로/redmini-mcp-prj/dist/index.js`
-5. 환경 변수는 실행 쉘의 환경 변수나 Cursor 전역 설정에 `REDMINE_URL`과 `REDMINE_API_KEY`를 등록하거나, 아래 래퍼 스크립트를 지정할 수 있습니다.
+5. 환경 변수는 실행 쉘의 환경 변수나 Cursor 전역 설정에 `REDMINE_URL`과 `REDMINE_API_KEY`, `TRANSPORT=stdio`를 등록합니다.
 
-### 6.2. SSE(HTTP) 방식으로 연동하기 (권장)
-부서 공용 서버가 운영 중이거나 로컬에서 SSE 서버를 기동해 둔 경우:
+### 6.2. 원격 HTTP 방식으로 연동하기
+부서 공용 서버가 Streamable HTTP 모드로 운영 중인 경우:
 
 1. **Features > MCP Servers > + Add New MCP Server** 클릭.
 2. 아래와 같이 설정합니다:
-   - **Name**: `redmine-sse`
-   - **Type**: `sse`
-   - **URL**: `http://localhost:3000/mcp/sse` (또는 사내 공용 서버 주소)
+   - **Name**: `redmine-http`
+   - **Type**: `http` (또는 클라이언트 지원 형식)
+   - **URL**: `http://localhost:3000/mcp` (또는 사내 공용 서버 엔드포인트)
    - **Headers** (선택 사항):
      ```json
      {
        "X-Redmine-API-Key": "your_personal_api_key"
      }
      ```
-3. 저장 후 초록색 연결 표시(Connected)가 뜨는지 확인합니다.
+3. 저장 후 연결 상태를 확인합니다.
 
 ---
 
-## 7. 부서 공용 SSE 서버 배포 가이드 (Multi-User)
+## 7. 부서 공용 Streamable HTTP 서버 배포 가이드 (Multi-User)
 
 부서원들이 공용으로 사용할 수 있도록 상시 가동형 중앙 서버로 배포하는 절차입니다.
 
 ### 7.1. 서버 실행
 ```bash
-# 환경 변수와 함께 SSE 전송 모드로 기동
-TRANSPORT=sse PORT=3000 REDMINE_URL=https://redmine.your-domain.com node dist/index.js
+# 환경 변수와 함께 Streamable HTTP 전송 모드로 기동 (기본값)
+TRANSPORT=http PORT=3000 REDMINE_URL=https://redmine.your-domain.com node dist/index.js
 ```
 
 기동 시 표준 에러(stderr)에 아래와 같은 로그가 출력됩니다:
 ```text
-Redmine MCP Server is running on SSE mode at http://localhost:3000
+Redmine MCP Server is running on Streamable HTTP mode at http://localhost:3000
 ```
 
 ### 7.2. PM2를 이용한 프로세스 데몬 관리 (운영 권장)
@@ -223,7 +226,7 @@ Redmine MCP Server is running on SSE mode at http://localhost:3000
 npm install -g pm2
 
 # MCP 서버 기동
-pm2 start dist/index.js --name "redmine-mcp" --env TRANSPORT="sse",PORT=3000,REDMINE_URL="https://redmine.your-domain.com"
+pm2 start dist/index.js --name "redmine-mcp" --env TRANSPORT="http",PORT=3000,REDMINE_URL="https://redmine.your-domain.com"
 
 # 부팅 시 자동 실행 등록
 pm2 save
@@ -231,7 +234,7 @@ pm2 startup
 ```
 
 ### 7.3. 다중 사용자 권한 위임 동작 원리
-* SSE 연결 시 클라이언트가 HTTP 헤더로 `X-Redmine-API-Key`를 전송합니다.
+* HTTP 연결 및 요청 시 클라이언트가 HTTP 헤더로 `X-Redmine-API-Key`를 전송합니다.
 * 서버 내부의 `getAuthClient` 미들웨어는 해당 요청 세션에 해당 사용자의 API 키를 바인딩하여 Redmine API를 대리 호출합니다.
 * 따라서 Redmine 일감 조회 내역 및 권한 제어(비공개 프로젝트, 접근 가능 일감 등)가 **해당 사용자 본인의 권한**으로 정확히 제한됩니다.
 * 헤더가 누락된 경우 서버 전역의 `REDMINE_API_KEY`로 안전하게 폴백(Fallback)됩니다.
@@ -256,7 +259,7 @@ pm2 startup
 docker build -t redmine-mcp:latest .
 ```
 
-### 8.3. Docker 컨테이너 단독 실행 (SSE 모드)
+### 8.3. Docker 컨테이너 단독 실행 (HTTP 모드)
 빌드된 이미지를 단독 컨테이너로 백그라운드 구동합니다:
 
 ```bash
@@ -265,7 +268,7 @@ docker run -d \
   -p 3000:3000 \
   -e REDMINE_URL="https://redmine.your-domain.com" \
   -e REDMINE_API_KEY="your_redmine_api_key" \
-  -e TRANSPORT="sse" \
+  -e TRANSPORT="http" \
   -e PORT="3000" \
   -e LOG_LEVEL="info" \
   --restart unless-stopped \
@@ -281,7 +284,7 @@ docker run -d \
 ```env
 REDMINE_URL=https://redmine.your-domain.com
 REDMINE_API_KEY=your_redmine_api_key
-TRANSPORT=sse
+TRANSPORT=http
 PORT=3000
 LOG_LEVEL=info
 ```
@@ -305,8 +308,8 @@ docker compose down
 # 컨테이너 상태 및 Healthcheck (healthy) 확인
 docker ps --filter "name=redmine-mcp"
 
-# SSE 연결 및 엔드포인트 응답 점검
-curl -N -i http://localhost:3000/mcp/sse -H "Accept: text/event-stream"
+# 헬스체크 엔드포인트 응답 점검
+curl -i http://localhost:3000/health
 ```
 
 ---
@@ -363,8 +366,8 @@ curl -N -i http://localhost:3000/mcp/sse -H "Accept: text/event-stream"
   3. 터미널에서 `node /해당/절대경로/dist/index.js`를 직접 실행하여 문법 오류나 파일 부재 에러가 없는지 검증하십시오.
   4. Claude Desktop 앱을 완전히 종료(`Cmd + Q`)한 후 다시 실행하십시오.
 
-### Q4. 부서 공용 SSE 연결 시 세션이 자주 끊어집니다.
-* **해결**: 서버의 SSE 라우터는 30초 간격으로 하트비트(`:\n\n`)를 발송하며 유휴 세션은 5분(`sessionTtlMs`) 후 정리됩니다. 리버스 프록시(Nginx 등)를 앞단에 둘 경우 SSE 버퍼링 방지(`proxy_buffering off;`) 설정을 적용하십시오.
+### Q4. 부서 공용 HTTP 연결 시 세션 관리는 어떻게 되나요?
+* **해결**: 서버의 Streamable HTTP 라우터는 유휴 세션을 5분(`sessionTtlMs`) 후 자동 정리하며, 연결된 클라이언트가 DELETE 요청을 보내면 세션 및 관련 리소스가 즉시 안전하게 해제됩니다. 프록시(Nginx 등) 앞단에 둘 경우 버퍼링 방지(`proxy_buffering off;`) 설정을 권장합니다.
 
 ---
 
