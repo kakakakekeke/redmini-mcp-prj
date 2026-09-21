@@ -64,6 +64,10 @@ status: active
 | **[[security_audit_report\|document/security_audit_report.md]]** | `보안`, `감사`, `security`, `audit`, `취약점`, `prompt-injection`, `CORS`, `dry_run`, `CVE`, `인증`, `업로드` | • MCP 서버 보안 취약점 및 개선 사항 전체 파악 시<br>• 간접 프롬프트 주입, CORS, 인증 관련 보안 이슈 확인 시<br>• 우선순위별 개선 로드맵 참조 시 | 2026-09-21 기준 전체 소스코드 보안 감사 결과 레포트 (종합 76/100, 11개 개선 항목) |
 | **[[DL-0018-cors-whitelist|document/decision_log/DL-0018-cors-whitelist.md]]** | `DL`, `cors`, `whitelist`, `화이트리스트`, `보안`, `CORS_ALLOWED_ORIGINS` | • CORS 화이트리스트 및 허용 Origin 설정 확인 시<br>• 브라우저 클라이언트 연동 정책 참조 시 | DL-0018: CORS 와일드카드 제거 및 환경변수 기반 화이트리스트 도입 |
 | **[[DL-0019-add-issue-note-dry-run|document/decision_log/DL-0019-add-issue-note-dry-run.md]]** | `DL`, `add_issue_note`, `dry_run`, `보안`, `댓글`, `프롬프트주입` | • 일감 댓글 추가(add_issue_note) 도구 dry_run 가드 확인 시<br>• 간접 프롬프트 주입 방어 정책 참조 시 | DL-0019: add_issue_note 도구에 dry_run 파라미터 추가 및 기본값 true 적용 |
+| **[[DL-0020-http-auth-middleware|document/decision_log/DL-0020-http-auth-middleware.md]]** | `DL`, `보안`, `인증`, `Bearer`, `토큰`, `auth`, `MCP_AUTH_TOKEN`, `fallback`, `ALLOW_SERVER_KEY_FALLBACK` | • HTTP 엔드포인트 Bearer 인증 및 서버 키 폴백 제어 확인 시<br>• 다중 사용자 API 키 누락 방어 정책 참조 시 | DL-0020: HTTP Bearer 인증 미들웨어 및 서버 키 폴백 제어 |
+| **[[DL-0021-prompt-injection-defense|document/decision_log/DL-0021-prompt-injection-defense.md]]** | `DL`, `보안`, `프롬프트주입`, `prompt-injection`, `detector`, `탈옥`, `_security_warning` | • 간접 프롬프트 주입 방어 및 의심 패턴 탐지 레이어 확인 시<br>• 조회 도구 응답 보안 경고 정책 참조 시 | DL-0021: 간접 프롬프트 주입(Prompt Injection) 의심 패턴 탐지 레이어 도입 |
+| **[[DL-0022-resolver-ttl-cache|document/decision_log/DL-0022-resolver-ttl-cache.md]]** | `DL`, `보안`, `캐시`, `TTL`, `SmartNameResolver`, `resolver`, `DoS`, `정보노출` | • SmartNameResolver TTL 인메모리 캐싱 사양 확인 시<br>• 메타데이터 재조회 및 캐시 수동 만료(clearCache) 참조 시 | DL-0022: SmartNameResolver TTL 인메모리 캐시 적용 |
+| **[[DL-0023-rate-limiting|document/decision_log/DL-0023-rate-limiting.md]]** | `DL`, `보안`, `rate-limit`, `속도제한`, `express-rate-limit`, `DoS`, `brute-force` | • HTTP 모드 엔드포인트(/mcp, /health) Rate Limiting 정책 확인 시<br>• express-rate-limit 미들웨어 설정 및 임계치 참조 시 | DL-0023: express-rate-limit 미들웨어 도입 및 HTTP 엔드포인트 Rate Limiting 적용 |
 
 
 ---

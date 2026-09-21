@@ -1,7 +1,10 @@
-import { RedmineClient } from './redmine.js';
+import { RedmineClient } from "./redmine.js";
 
 export class SmartNameResolver {
   private client: RedmineClient;
+  private cacheTtlMs: number;
+  private lastLoadedAt = 0;
+
   private projects: Record<string, number> = {};
   private trackers: Record<string, number> = {};
   private statuses: Record<string, number> = {};
@@ -9,11 +12,16 @@ export class SmartNameResolver {
   private users: Record<string, number> = {};
   private activities: Record<string, number> = {};
 
-  constructor(client: RedmineClient) {
+  constructor(client: RedmineClient, cacheTtlMs: number = 300_000) {
     this.client = client;
+    this.cacheTtlMs = cacheTtlMs;
   }
 
-  async load() {
+  async load(force: boolean = false) {
+    if (!force && this.lastLoadedAt > 0 && (Date.now() - this.lastLoadedAt) < this.cacheTtlMs) {
+      return;
+    }
+
     const fetchPromises: Promise<any>[] = [
       this.client.getProjects(),
       this.client.getTrackers(),
@@ -28,35 +36,35 @@ export class SmartNameResolver {
     const results = await Promise.allSettled(fetchPromises);
 
     this.projects = {};
-    if (results[0].status === 'fulfilled' && results[0].value) {
+    if (results[0].status === "fulfilled" && results[0].value) {
       for (const p of results[0].value.projects || []) {
         this.projects[p.name.toLowerCase()] = p.id;
       }
     }
 
     this.trackers = {};
-    if (results[1].status === 'fulfilled' && results[1].value) {
+    if (results[1].status === "fulfilled" && results[1].value) {
       for (const t of results[1].value.trackers || []) {
         this.trackers[t.name.toLowerCase()] = t.id;
       }
     }
 
     this.statuses = {};
-    if (results[2].status === 'fulfilled' && results[2].value) {
+    if (results[2].status === "fulfilled" && results[2].value) {
       for (const s of results[2].value.issue_statuses || []) {
         this.statuses[s.name.toLowerCase()] = s.id;
       }
     }
 
     this.priorities = {};
-    if (results[3].status === 'fulfilled' && results[3].value) {
+    if (results[3].status === "fulfilled" && results[3].value) {
       for (const p of results[3].value.issue_priorities || []) {
         this.priorities[p.name.toLowerCase()] = p.id;
       }
     }
 
     this.users = {};
-    if (results[4].status === 'fulfilled' && results[4].value) {
+    if (results[4].status === "fulfilled" && results[4].value) {
       for (const u of results[4].value.users || []) {
         this.users[`${u.firstname} ${u.lastname}`.toLowerCase()] = u.id;
         if (u.login) {
@@ -71,6 +79,12 @@ export class SmartNameResolver {
         this.activities[a.name.toLowerCase()] = a.id;
       }
     }
+
+    this.lastLoadedAt = Date.now();
+  }
+
+  clearCache() {
+    this.lastLoadedAt = 0;
   }
 
   resolveProject(name: string): number | undefined {
