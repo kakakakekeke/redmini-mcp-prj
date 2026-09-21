@@ -36,6 +36,53 @@ describe('RedmineClient', () => {
     expect(data.projects.length).toBe(101);
   });
 
+  describe("getProject", () => {
+    it("should call GET /projects/:id.json with default include params and return project data", async () => {
+      const mockProjectData = {
+        project: {
+          id: 1,
+          name: "Test Project",
+          identifier: "test-project",
+          trackers: [{ id: 1, name: "Defect" }],
+          issue_custom_fields: [{ id: 10, name: "Custom Field 1" }],
+        },
+      };
+      const mockGet = vi.fn().mockResolvedValue({ data: mockProjectData });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getProject(1);
+      expect(mockGet).toHaveBeenCalledWith("/projects/1.json", {
+        params: {
+          include: "trackers,issue_categories,enabled_modules,time_entry_activities,issue_custom_fields",
+        },
+      });
+      expect(result).toEqual(mockProjectData);
+    });
+
+    it("should call GET /projects/:id.json with custom include params when provided", async () => {
+      const mockProjectData = {
+        project: { id: "test-project", name: "Test Project" },
+      };
+      const mockGet = vi.fn().mockResolvedValue({ data: mockProjectData });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getProject("test-project", { include: "trackers,issue_custom_fields" });
+      expect(mockGet).toHaveBeenCalledWith("/projects/test-project.json", {
+        params: {
+          include: "trackers,issue_custom_fields",
+        },
+      });
+      expect(result).toEqual(mockProjectData);
+    });
+
+    it("should propagate errors from GET /projects/:id.json", async () => {
+      const mockGet = vi.fn().mockRejectedValue(new Error("Project not found"));
+      (client as any).api = { get: mockGet };
+
+      await expect(client.getProject(999)).rejects.toThrow("Project not found");
+    });
+  });
+
   describe('addIssueNote', () => {
     it('should call PUT /issues/:id.json and normalize 204 No Content to {}', async () => {
       const mockPut = vi.fn().mockResolvedValue({ status: 204, data: '' });

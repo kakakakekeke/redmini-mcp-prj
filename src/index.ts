@@ -36,7 +36,7 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
 
   server.tool(
     "get_projects",
-    "Redmine 프로젝트 목록을 조회합니다. 보관된 프로젝트 포함 여부를 지정할 수 있습니다.",
+    "Redmine 프로젝트 목록 또는 단일 프로젝트 상세 정보를 조회합니다. project_id를 지정하면 일감 커스텀 필드(issue_custom_fields) 및 트래커(trackers) 등 상세 정보를 조회하며, 생략 시 전체 프로젝트 목록을 조회합니다. 보관된 프로젝트 포함 여부를 지정할 수 있습니다.",
     getProjectsSchema.shape,
     async (args) => {
       const result = await getProjectsHandler(args as any, client);

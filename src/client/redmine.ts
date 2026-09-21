@@ -40,6 +40,10 @@ export interface GetProjectsParams {
   include_archived?: boolean;
 }
 
+export interface GetProjectParams {
+  include?: string;
+}
+
 export interface SearchWikiParams {
   project_id?: string;
   title?: string;
@@ -211,6 +215,19 @@ export class RedmineClient {
     } while (offset < totalCount);
 
     return { projects: allProjects };
+  }
+
+  async getProject(projectId: string | number, params?: GetProjectParams) {
+    const defaultInclude = "trackers,issue_categories,enabled_modules,time_entry_activities,issue_custom_fields";
+    const queryParams: Record<string, any> = {
+      include: params?.include !== undefined ? params.include : defaultInclude,
+    };
+    try {
+      const { data } = await this.api.get(`/projects/${projectId}.json`, { params: queryParams });
+      return data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getStatuses() {
