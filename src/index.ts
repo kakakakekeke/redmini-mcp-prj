@@ -2,8 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import express from "express";
 import cors from "cors";
+import { rateLimit, type Options } from "express-rate-limit";
 import { createStreamableHttpRouter } from "./server/streamable-http-runner.js";
-import { getAuthClient } from "./middleware/auth.js";
+import { getAuthClient, verifyHttpBearerToken } from "./middleware/auth.js";
+import { processToolResult } from "./utils/prompt_injection_detector.js";
 import { getProjectsHandler, getProjectsSchema } from "./tools/get_projects.js";
 import { getIssueDetailsHandler, getIssueDetailsSchema } from "./tools/get_issue_details.js";
 import { searchIssuesHandler, searchIssuesSchema } from "./tools/search_issues.js";
@@ -23,7 +25,6 @@ import { uploadAttachmentHandler, uploadAttachmentSchema } from "./tools/upload_
 import { getAttachmentContentHandler, getAttachmentContentSchema } from "./tools/get_attachment_content.js";
 import { logger } from "./utils/logger.js";
 
-
 // Factory function to create a new MCP Server instance per connection
 export function createRedmineMcpServer(headers: Record<string, string | string[] | undefined> = {}) {
   const server = new McpServer({
@@ -39,7 +40,7 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     getProjectsSchema.shape,
     async (args) => {
       const result = await getProjectsHandler(args as any, client);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
   
@@ -49,7 +50,7 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     getIssueDetailsSchema.shape,
     async (args) => {
       const result = await getIssueDetailsHandler(args as any, client);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
   
@@ -59,7 +60,7 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     searchIssuesSchema.shape,
     async (args) => {
       const result = await searchIssuesHandler(args as any, client);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
 
@@ -93,7 +94,6 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     }
   );
 
-
   server.tool(
     "log_time",
     "일감 또는 프로젝트에 작업 시간을 기록합니다 (POST /time_entries.json).",
@@ -110,7 +110,7 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     getTimeEntriesSchema.shape,
     async (args) => {
       const result = await getTimeEntriesHandler(args as any, client);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
 
@@ -120,10 +120,9 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     searchWikiSchema.shape,
     async (args) => {
       const result = await searchWikiHandler(args as any, client);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
-
 
   server.tool(
     "create_or_update_wiki",
@@ -141,7 +140,7 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     getMyAccountSchema.shape,
     async (args) => {
       const result = await getMyAccountHandler(args as any, client);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
 
@@ -151,7 +150,7 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     searchAllSchema.shape,
     async (args) => {
       const result = await searchAllHandler(args as any, client);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
 
@@ -164,7 +163,6 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );
-
 
   server.tool(
     "manage_versions",
@@ -202,9 +200,10 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
     getAttachmentContentSchema.shape,
     async (args) => {
       const result = await getAttachmentContentHandler(args as any, client);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
+
   server.tool(
     "ping",
     "Redmine MCP 서버의 연결 상태 및 헬스체크를 수행합니다.",
@@ -217,6 +216,28 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
   );
 
   return server;
+}
+
+export function getMcpRateLimiter(options?: Partial<Options>) {
+  return rateLimit({
+    windowMs: 60 * 1000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests from this IP, please try again later." },
+    ...options,
+  });
+}
+
+export function getHealthRateLimiter(options?: Partial<Options>) {
+  return rateLimit({
+    windowMs: 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests from this IP, please try again later." },
+    ...options,
+  });
 }
 
 export function getCorsMiddleware() {
@@ -251,8 +272,8 @@ async function main() {
   if (!isStdio) {
     const app = express();
     app.use(getCorsMiddleware());
-    app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
-    app.all("/mcp", createStreamableHttpRouter(createRedmineMcpServer));
+    app.get("/health", getHealthRateLimiter(), (req, res) => res.status(200).json({ status: "ok" }));
+    app.all("/mcp", getMcpRateLimiter(), verifyHttpBearerToken, createStreamableHttpRouter(createRedmineMcpServer));
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
     app.listen(port, () => {

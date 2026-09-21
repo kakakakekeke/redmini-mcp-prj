@@ -85,4 +85,41 @@ describe('SmartNameResolver', () => {
     // User should not be found
     expect(resolver.resolveUser('John Doe')).toBeUndefined();
   });
+  describe("TTL In-Memory Cache", () => {
+    it("should not refetch Redmine data if called multiple times within cache TTL", async () => {
+      await resolver.load();
+      expect(client.getProjects).toHaveBeenCalledTimes(1);
+
+      await resolver.load();
+      await resolver.load();
+      expect(client.getProjects).toHaveBeenCalledTimes(1);
+    });
+
+    it("should refetch Redmine data if force=true is passed to load()", async () => {
+      await resolver.load();
+      expect(client.getProjects).toHaveBeenCalledTimes(1);
+
+      await resolver.load(true);
+      expect(client.getProjects).toHaveBeenCalledTimes(2);
+    });
+
+    it("should refetch Redmine data after clearCache() is called", async () => {
+      await resolver.load();
+      expect(client.getProjects).toHaveBeenCalledTimes(1);
+
+      resolver.clearCache();
+      await resolver.load();
+      expect(client.getProjects).toHaveBeenCalledTimes(2);
+    });
+
+    it("should refetch Redmine data after TTL expires", async () => {
+      const shortTtlResolver = new SmartNameResolver(client, 50); // 50ms TTL
+      await shortTtlResolver.load();
+      expect(client.getProjects).toHaveBeenCalledTimes(1);
+
+      await new Promise((r) => setTimeout(r, 60));
+      await shortTtlResolver.load();
+      expect(client.getProjects).toHaveBeenCalledTimes(2);
+    });
+  });
 });

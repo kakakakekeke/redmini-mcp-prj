@@ -21,15 +21,16 @@ tags:
 * (현재 등록된 모든 P1 보안 작업이 완료되었습니다.)
 
 ### ⚠️ P2 — 단기 조치 (보안 감사 기반, 1-2주)
-- [ ] `fix/security-http-auth-middleware` : HTTP 모드 `/mcp` 엔드포인트 Bearer 토큰 인증 미들웨어 추가, `REDMINE_API_KEY` 폴백을 환경변수 플래그로 제어 — [[security_audit_report]] 3-2항
+* (현재 등록된 모든 P2 보안 작업이 완료되었습니다.)
 
 ### 📌 P3 — 중기 조치 (보안 감사 기반, 1개월)
-- [ ] `fix/security-prompt-injection-defense` : 조회 도구(`get_issue_details`, `search_wiki` 등) 응답 본문에서 간접 프롬프트 주입 의심 패턴 탐지 레이어 추가 — [[security_audit_report]] 3-1항
-- [ ] `chore/security-resolver-ttl-cache` : `SmartNameResolver` 사용자 목록에 TTL 캐시 적용 (DoS 방지 및 정보 과다 노출 완화) — [[security_audit_report]] 2-5항
-- [ ] `chore/security-rate-limiting` : `express-rate-limit` 미들웨어 도입으로 HTTP 엔드포인트 Rate Limiting 적용 — [[security_audit_report]] 4항
-- [ ] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
+- [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
 
 ## ✅ 완료된 작업 (Done)
+- [x] `fix/security-http-auth-middleware` : HTTP 모드 `/mcp` 엔드포인트 Bearer 토큰 인증 미들웨어 추가, `REDMINE_API_KEY` 폴백을 환경변수 플래그로 제어 — [[security_audit_report]] 3-2항, [[DL-0020-http-auth-middleware]]
+- [x] `fix/security-prompt-injection-defense` : 조회 도구(`get_issue_details`, `search_wiki` 등) 응답 본문에서 간접 프롬프트 주입 의심 패턴 탐지 레이어 추가 — [[security_audit_report]] 3-1항, [[DL-0021-prompt-injection-defense]]
+- [x] `chore/security-resolver-ttl-cache` : `SmartNameResolver` 사용자 목록에 TTL 캐시 적용 (DoS 방지 및 정보 과다 노출 완화) — [[security_audit_report]] 2-5항, [[DL-0022-resolver-ttl-cache]]
+- [x] `chore/security-rate-limiting` : `express-rate-limit` 미들웨어 도입으로 HTTP 엔드포인트 Rate Limiting 적용 — [[security_audit_report]] 4항, [[DL-0023-rate-limiting]]
 - [x] `fix/security-get-my-account-api-key` : `get_my_account` 도구 응답에서 `api_key` 필드 제거/마스킹 처리 (LLM 컨텍스트 API Key 노출 차단) — [[security_audit_report]] 2-4항
 - [x] `fix/security-update-issue-dry-run` : `update_issue` dry_run 기본값 `false` → `true` 수정 (DL-0007 결정 준수, 전체 쓰기 도구 일관성 회복) — [[security_audit_report]] 2-2항
 - [x] `fix/security-upload-attachment-limit` : `upload_attachment` content 최대 크기 상한(10MB) 추가 및 filename 경로 탈출(`../`) 방어 정규식 적용 — [[security_audit_report]] 3-3항
