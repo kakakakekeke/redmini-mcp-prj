@@ -1,7 +1,7 @@
 ---
 title: "프로젝트 할 일 및 진행 현황 (TO-DO)"
 created: 2026-09-19
-updated: 2026-09-20
+updated: 2026-09-21
 tags:
   - todo
   - tracker
@@ -18,9 +18,10 @@ tags:
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
 
-1. [ ] `feature/streamable-http-transport` : 레거시 SSE 전송 계층 제거 및 Streamable HTTP(`StreamableHTTPServerTransport`) & Stdio 이중 전송 계층 구축, `/health` 엔드포인트 및 CORS 미들웨어 추가, E2E 테스트 갱신
+(현재 대기 중인 작업이 없습니다.)
 
 ## ✅ 완료된 작업 (Done)
+- [x] `feature/streamable-http-transport` : 레거시 SSE 전송 계층 제거 및 Streamable HTTP(`StreamableHTTPServerTransport`) & Stdio 이중 전송 계층 구축, `/health` 엔드포인트 및 CORS 미들웨어 추가, E2E 테스트 갱신
 - [x] `feature/ip-logging` : SSE 연결 및 tool 호출 시 호출자 IP 로깅 기능 구현 (GET /sse, POST /message 엔드포인트에 X-Forwarded-For 기반 IP 추출 및 기록)
 - [x] `feature/get-attachment-content` : 첨부파일 본문 내용 조회(get_attachment_content) 도구 TDD 구현 (GET /attachments/{id}.json, GET /attachments/download/{id}/{filename})
 - [x] `feature/upload-attachment` : 2단계 파일 업로드 및 첨부 연동(upload_attachment) 도구 TDD 구현 (POST /uploads.json)

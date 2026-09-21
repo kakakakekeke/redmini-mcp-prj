@@ -1,12 +1,12 @@
 ---
 title: 자체 Redmine MCP 서버 아키텍처 설계서 (Multi-User & LLM Optimized)
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-09-21
 tags:
   - architecture
   - mcp
   - multi-user
-  - sse
+  - streamable-http
   - stdio
 aliases:
   - Architecture Design
@@ -23,7 +23,7 @@ status: draft
 *   **언어 및 런타임**: TypeScript / Node.js
 *   **핵심 라이브러리**:
     *   `@modelcontextprotocol/sdk`: 공식 MCP 프로토콜 구현체
-    *   `express`: HTTP(SSE) 전송 방식 지원을 위한 웹 프레임워크
+    *   `express`: HTTP(Streamable HTTP) 전송 방식 지원을 위한 웹 프레임워크
     *   `axios`: Redmine REST API 통신용 HTTP 클라이언트
     *   `zod`: LLM 입력값에 대한 강력한 런타임 타입 검증
 
@@ -33,9 +33,9 @@ status: draft
 
 부서 공용 서버 배포 및 로컬 테스트를 모두 만족시키기 위해 두 가지 전송 방식을 모두 구현(Dual-Transport)합니다.
 
-1.  **HTTP 기반 SSE (Server-Sent Events) 방식 (주력)**
+1.  **Streamable HTTP (`StreamableHTTPServerTransport`) 방식 (주력)**
     *   **용도**: 부서 중앙 서버에 배포하여 여러 사용자가 네트워크를 통해 접근.
-    *   **구현**: `express` 웹 서버를 띄우고, `/mcp/sse` 엔드포인트를 통해 클라이언트와 지속적인 연결 수립. 메시지 수신은 `/mcp/message` 엔드포인트 사용.
+    *   **구현**: `express` 웹 서버를 띄우고, `/mcp` 단일 엔드포인트(GET/POST/DELETE)를 통해 클라이언트와 통신. 세션 ID 발급, 메시지 송수신 및 SSE 스트리밍을 통합 처리.
 2.  **Stdio (Standard I/O) 방식 (보조)**
     *   **용도**: 로컬 환경에서의 빠른 디버깅, 혹은 특정 사용자가 자신의 PC(Claude Desktop, Cursor)에서 직접 단독 실행할 때 사용.
     *   **구현**: 프로세스의 표준 입출력을 통해 통신 (기본 MCP 방식).
@@ -46,7 +46,7 @@ status: draft
 
 사내 공용 서버로 사용되므로, Audit Trail(감사 기록)과 RBAC(역할 기반 접근 제어)를 위해 **요청별 사용자 식별**이 필수적입니다.
 
-*   **인증 전략 1: Per-User API Key (HTTP/SSE 전용)**
+*   **인증 전략 1: Per-User API Key (Streamable HTTP 전용)**
     *   클라이언트(사용자의 LLM 앱)가 HTTP 요청 헤더에 `X-Redmine-API-Key`를 포함하여 전송.
     *   MCP 서버는 이 헤더를 추출하여 Redmine API 호출 시 그대로 위임 전달.
     *   결과적으로 Redmine에는 실제 요청한 부서원의 이름으로 일감 조회 및 활동이 기록됨.
@@ -82,7 +82,7 @@ src/
 ├── server/
 │   ├── mcp-server.ts      # MCP 서버 인스턴스 초기화 및 도구(Tools) 등록
 │   ├── stdio-runner.ts    # Stdio 전송 계층 핸들러
-│   └── sse-runner.ts      # HTTP(Express) SSE 전송 계층 핸들러
+│   └── streamable-http-runner.ts # HTTP(Express) Streamable HTTP 전송 계층 핸들러
 ├── redmine/
 │   ├── client.ts          # Axios 기반 Redmine API 통신 클라이언트 (인증 위임 처리)
 │   ├── resolver.ts        # Smart Name Resolver (캐시 및 매핑 로직)

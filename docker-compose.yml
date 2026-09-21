@@ -11,6 +11,6 @@ services:
     environment:
       - REDMINE_URL=${REDMINE_URL:-https://redmine.example.com}
       - REDMINE_API_KEY=${REDMINE_API_KEY:-your_redmine_api_key}
-      - TRANSPORT=sse
+      - TRANSPORT=http
       - PORT=3000
       - LOG_LEVEL=info
