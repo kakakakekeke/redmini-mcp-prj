@@ -620,4 +620,147 @@ it("should normalize 204 No Content or empty data to success message on update",
       await expect(client.downloadAttachment(42, "test.log")).rejects.toThrow("Download failed");
     });
   });
+  describe("getIssues", () => {
+    it("should call GET /issues.json with basic params", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { issues: [{ id: 1, subject: "Issue 1" }], total_count: 1 },
+      });
+      (client as any).api = { get: mockGet };
+
+      const params = { project_id: "test-proj", status_id: "open", limit: 20 };
+      const result = await client.getIssues(params);
+
+      expect(mockGet).toHaveBeenCalledWith("/issues.json", { params });
+      expect(result).toEqual({ issues: [{ id: 1, subject: "Issue 1" }], total_count: 1 });
+    });
+
+    it("should convert query param to subject: ~query and remove query", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { issues: [] },
+      });
+      (client as any).api = { get: mockGet };
+
+      await client.getIssues({ query: "login error" });
+
+      expect(mockGet).toHaveBeenCalledWith("/issues.json", {
+        params: { subject: "~login error" },
+      });
+    });
+
+    it("should handle custom_fields with or without cf_ prefix without double prefixing", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { issues: [] },
+      });
+      (client as any).api = { get: mockGet };
+
+      await client.getIssues({
+        custom_fields: {
+          "cf_1": "prefixed",
+          "2": "unprefixed",
+        },
+      });
+
+      expect(mockGet).toHaveBeenCalledWith("/issues.json", {
+        params: {
+          cf_1: "prefixed",
+          cf_2: "unprefixed",
+        },
+      });
+    });
+
+    it("should not overwrite subject if subject already specified, and ignore empty query", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { issues: [] },
+      });
+      (client as any).api = { get: mockGet };
+
+      await client.getIssues({
+        query: "ignored query",
+        subject: "=Explicit Subject",
+      });
+
+      expect(mockGet).toHaveBeenCalledWith("/issues.json", {
+        params: {
+          subject: "=Explicit Subject",
+        },
+      });
+
+      await client.getIssues({
+        query: "   ",
+      });
+
+      expect(mockGet).toHaveBeenCalledWith("/issues.json", {
+        params: {},
+      });
+    });
+
+    it("should map custom_fields record to cf_X params and delete custom_fields", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { issues: [] },
+      });
+      (client as any).api = { get: mockGet };
+
+      await client.getIssues({
+        project_id: "proj-1",
+        custom_fields: {
+          "1": "feature",
+          "2": 42,
+        },
+      });
+
+      expect(mockGet).toHaveBeenCalledWith("/issues.json", {
+        params: {
+          project_id: "proj-1",
+          cf_1: "feature",
+          cf_2: 42,
+        },
+      });
+    });
+
+    it("should pass all extended filters correctly", async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        data: { issues: [] },
+      });
+      (client as any).api = { get: mockGet };
+
+      const params = {
+        project_id: "test-proj",
+        subproject_id: "!*",
+        issue_id: "1,2,3",
+        parent_id: 10,
+        status_id: "open",
+        tracker_id: 1,
+        priority_id: 2,
+        category_id: 3,
+        fixed_version_id: 4,
+        assigned_to_id: "me",
+        author_id: 5,
+        query_id: 6,
+        subject: "test",
+        description: "details",
+        created_on: ">=2026-09-01",
+        updated_on: "<=2026-09-20",
+        start_date: "2026-09-01",
+        due_date: "2026-09-30",
+        closed_on: "2026-09-20",
+        estimated_hours: ">=4",
+        done_ratio: 80,
+        sort: "updated_on:desc",
+        limit: 100,
+        offset: 20,
+        include: "attachments,relations",
+      };
+
+      await client.getIssues(params);
+
+      expect(mockGet).toHaveBeenCalledWith("/issues.json", { params });
+    });
+
+    it("should propagate errors from GET /issues.json", async () => {
+      const mockGet = vi.fn().mockRejectedValue(new Error("Network Error"));
+      (client as any).api = { get: mockGet };
+
+      await expect(client.getIssues({ project_id: "fail" })).rejects.toThrow("Network Error");
+    });
+  });
 });

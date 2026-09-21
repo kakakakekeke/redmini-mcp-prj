@@ -75,31 +75,37 @@ export class SmartNameResolver {
 
   resolveProject(name: string): number | undefined {
     if (!name) return undefined;
-    return this.projects[name.toLowerCase()];
+    const key = name.toLowerCase();
+    return Object.hasOwn(this.projects, key) && typeof this.projects[key] === "number" ? this.projects[key] : undefined;
   }
 
   resolveTracker(name: string): number | undefined {
     if (!name) return undefined;
-    return this.trackers[name.toLowerCase()];
+    const key = name.toLowerCase();
+    return Object.hasOwn(this.trackers, key) && typeof this.trackers[key] === "number" ? this.trackers[key] : undefined;
   }
 
   resolveStatus(name: string): number | undefined {
     if (!name) return undefined;
-    return this.statuses[name.toLowerCase()];
+    const key = name.toLowerCase();
+    return Object.hasOwn(this.statuses, key) && typeof this.statuses[key] === "number" ? this.statuses[key] : undefined;
   }
 
   resolvePriority(name: string): number | undefined {
     if (!name) return undefined;
-    return this.priorities[name.toLowerCase()];
+    const key = name.toLowerCase();
+    return Object.hasOwn(this.priorities, key) && typeof this.priorities[key] === "number" ? this.priorities[key] : undefined;
   }
 
   resolveUser(name: string): number | undefined {
     if (!name) return undefined;
-    return this.users[name.toLowerCase()];
+    const key = name.toLowerCase();
+    return Object.hasOwn(this.users, key) && typeof this.users[key] === "number" ? this.users[key] : undefined;
   }
 
   resolveActivity(name: string): number | undefined {
     if (!name) return undefined;
-    return this.activities[name.toLowerCase()];
+    const key = name.toLowerCase();
+    return Object.hasOwn(this.activities, key) && typeof this.activities[key] === "number" ? this.activities[key] : undefined;
   }
 }

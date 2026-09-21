@@ -1,12 +1,33 @@
 import axios, { AxiosInstance } from 'axios';
 
 export interface GetIssuesParams {
-  project_id?: string;
-  status_id?: string;
-  tracker_id?: string;
-  assigned_to_id?: string;
+  project_id?: string | number;
+  subproject_id?: string | number;
+  issue_id?: string | number;
+  parent_id?: string | number;
+  status_id?: string | number;
+  tracker_id?: string | number;
+  priority_id?: string | number;
+  category_id?: string | number;
+  fixed_version_id?: string | number;
+  assigned_to_id?: string | number;
+  author_id?: string | number;
+  query_id?: string | number;
   query?: string;
+  subject?: string;
+  description?: string;
+  created_on?: string;
+  updated_on?: string;
+  start_date?: string;
+  due_date?: string;
+  closed_on?: string;
+  estimated_hours?: string | number;
+  done_ratio?: string | number;
+  custom_fields?: Record<string, string | number>;
+  sort?: string;
   limit?: number;
+  offset?: number;
+  include?: string;
 }
 
 export interface GetIssueDetailsParams {
@@ -107,9 +128,18 @@ export class RedmineClient {
 
   async getIssues(params: GetIssuesParams) {
     const queryParams: Record<string, unknown> = { ...params };
-    if (params.query) {
-       queryParams.subject = `~${params.query}`;
-       delete queryParams.query;
+    if (params.query !== undefined) {
+      if (params.query.trim().length > 0 && !queryParams.subject) {
+        queryParams.subject = `~${params.query.trim()}`;
+      }
+      delete queryParams.query;
+    }
+    if (params.custom_fields) {
+      for (const [key, value] of Object.entries(params.custom_fields)) {
+        const cfKey = key.startsWith("cf_") ? key : `cf_${key}`;
+        queryParams[cfKey] = value;
+      }
+      delete queryParams.custom_fields;
     }
 
     try {

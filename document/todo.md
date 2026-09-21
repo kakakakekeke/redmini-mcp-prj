@@ -20,6 +20,7 @@ tags:
 
 
 ## ✅ 완료된 작업 (Done)
+- [x] `feature/search-issues-full-filters` : Redmine 공식 REST API(GET /issues.json) 전수 필터 및 커스텀 필드(cf_X), Smart Name Resolver 연동 확장
 - [x] `test/e2e-expansion` : E2E 통합 테스트 시나리오 보강 (TC-05 쓰기 dry_run 가드, TC-06 헬스체크 및 CORS, TC-07 다중 사용자 교차 격리, TC-08 2단계 첨부파일 업로드)
 - [x] `feature/streamable-http-transport` : 레거시 SSE 전송 계층 제거 및 Streamable HTTP(`StreamableHTTPServerTransport`) & Stdio 이중 전송 계층 구축, `/health` 엔드포인트 및 CORS 미들웨어 추가, E2E 테스트 갱신
 - [x] `feature/ip-logging` : SSE 연결 및 tool 호출 시 호출자 IP 로깅 기능 구현 (GET /sse, POST /message 엔드포인트에 X-Forwarded-For 기반 IP 추출 및 기록)
