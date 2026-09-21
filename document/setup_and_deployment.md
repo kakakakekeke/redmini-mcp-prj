@@ -237,7 +237,7 @@ pm2 startup
 * HTTP 연결 및 요청 시 클라이언트가 HTTP 헤더로 `X-Redmine-API-Key`를 전송합니다.
 * 서버 내부의 `getAuthClient` 미들웨어는 해당 요청 세션에 해당 사용자의 API 키를 바인딩하여 Redmine API를 대리 호출합니다.
 * 따라서 Redmine 일감 조회 내역 및 권한 제어(비공개 프로젝트, 접근 가능 일감 등)가 **해당 사용자 본인의 권한**으로 정확히 제한됩니다.
-* 헤더가 누락된 경우 서버 전역의 `REDMINE_API_KEY`로 안전하게 폴백(Fallback)됩니다.
+* 보안 강화(DL-0024): HTTP 모드에서는 대리인 권한 탈취 방지를 위해 서버 전역 `REDMINE_API_KEY` 폴백이 완전히 차단되어 있으며, 요청 헤더에 `X-Redmine-API-Key`가 필수적으로 제공되어야 합니다.
 
 ---
 
@@ -350,7 +350,7 @@ curl -i http://localhost:3000/health
 * **원인**: API Key가 제공되지 않았습니다.
 * **해결**:
   - Stdio 모드인 경우: `claude_desktop_config.json`의 `env` 블록에 `REDMINE_API_KEY`가 올바르게 기입되었는지 확인하십시오.
-  - SSE 모드인 경우: 클라이언트 요청 헤더에 `X-Redmine-API-Key`를 설정하거나 서버 실행 시 전역 `REDMINE_API_KEY`를 등록하십시오.
+  - HTTP/SSE 모드인 경우: HTTP 모드는 대리인 권한 탈취 방지를 위해 서버 전역 키 폴백이 차단되어 있으므로, 매 요청마다 클라이언트 요청 헤더에 `X-Redmine-API-Key`를 반드시 설정해야 합니다.
 
 ### Q2. `401 Unauthorized` 또는 `403 Forbidden` 응답을 받습니다.
 * **원인**: API 키가 만료되었거나, Redmine 관리자 페이지에서 REST API 서비스가 비활성화되어 있는 경우입니다.

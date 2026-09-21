@@ -274,6 +274,13 @@ async function main() {
     app.use(getCorsMiddleware());
     app.get("/health", getHealthRateLimiter(), (req, res) => res.status(200).json({ status: "ok" }));
     app.all("/mcp", getMcpRateLimiter(), verifyHttpBearerToken, createStreamableHttpRouter(createRedmineMcpServer));
+    app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+      if (err?.message?.includes("Missing Redmine API Key") || err?.message?.includes("Authentication failed")) {
+        return res.status(401).json({ error: err.message });
+      }
+      logger.error("Unhandled server error", err);
+      res.status(500).json({ error: "Internal server error" });
+    });
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
     app.listen(port, () => {
