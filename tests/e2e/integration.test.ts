@@ -276,7 +276,7 @@ describe("Redmine MCP Server E2E Integration Tests", () => {
         },
       });
       expect([200, 204]).toContain(corsRes.status);
-      expect(corsRes.headers.get("access-control-allow-origin")).toBe("*");
+      expect(corsRes.headers.get("access-control-allow-origin")).toBe("http://localhost:5173");
     });
 
     it("[TC-07] Streamable HTTP 다중 사용자 동시 접속 교차 격리 (User A vs User B)", async () => {

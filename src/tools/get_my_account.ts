@@ -20,6 +20,9 @@ export async function getMyAccountHandler(args: GetMyAccountArgs, client: Redmin
       include_memberships: args.include_memberships,
       include_groups: args.include_groups,
     });
+    if (result?.user && "api_key" in result.user) {
+      result.user.api_key = "[REDACTED]";
+    }
     return result;
   } catch (error: any) {
     if (error.response && error.response.status === 401) {

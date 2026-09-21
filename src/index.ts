@@ -65,7 +65,7 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
 
   server.tool(
     "add_issue_note",
-    "지정한 일감에 댓글(저널)을 추가합니다. [주의: 쓰기 도구] 실제 Redmine 데이터가 변경되므로, 호출 전 반드시 작성할 댓글 내용(notes)을 사용자에게 미리 안내하고 확인(승인)을 받은 후 실행해야 합니다.",
+    "지정한 일감에 댓글(저널)을 추가합니다. (dry_run 지원, 기본값: true) [주의: 쓰기 도구] 실제 댓글을 등록하려면 명시적으로 dry_run: false를 전달해야 합니다.",
     addIssueNoteSchema.shape,
     async (args) => {
       const result = await addIssueNoteHandler(args as any, client);
@@ -219,12 +219,38 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
   return server;
 }
 
+export function getCorsMiddleware() {
+  const allowedOriginsEnv = process.env.CORS_ALLOWED_ORIGINS;
+  const allowedOrigins = allowedOriginsEnv
+    ? allowedOriginsEnv.split(",").map((o) => o.trim())
+    : ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"];
+
+  return cors({
+    origin: (origin, callback) => {
+      // 브라우저가 아닌 도구(curl, postman, server-to-server 등)는 origin이 없을 수 있음
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.includes("*") ||
+        allowedOrigins.includes(origin) ||
+        /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+        /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS policy: Origin ${origin} not allowed`));
+    },
+    methods: ["GET", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Redmine-API-Key", "Mcp-Session-Id", "Last-Event-Id"],
+    exposedHeaders: ["Mcp-Session-Id"],
+  });
+}
+
 async function main() {
   const isStdio = process.env.TRANSPORT === "stdio";
 
   if (!isStdio) {
     const app = express();
-    app.use(cors());
+    app.use(getCorsMiddleware());
     app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
     app.all("/mcp", createStreamableHttpRouter(createRedmineMcpServer));
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;

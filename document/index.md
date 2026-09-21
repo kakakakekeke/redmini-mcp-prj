@@ -1,7 +1,7 @@
 ---
 title: Redmine MCP 프로젝트 문서 인덱스 (Agent Document Registry)
 created: 2026-09-18
-updated: 2026-09-20
+updated: 2026-09-21
 tags:
   - index
   - moc
@@ -62,6 +62,8 @@ status: active
 | **[[DL-0016-cors-middleware|document/decision_log/DL-0016-cors-middleware.md]]** | `DL`, `cors`, `미들웨어`, `웹클라이언트`, `브라우저` | • 웹 클라이언트 및 브라우저 에이전트 연동용 CORS 설정 확인 시<br>• cors 패키지 도입 사유 참조 시 | DL-0016: 웹 클라이언트 및 브라우저 에이전트 연동을 위한 cors 미들웨어 도입 |
 | **[[DL-0017-search-issues-full-filters-design|document/decision_log/DL-0017-search-issues-full-filters-design.md]]** | `DL`, `이슈검색`, `필터`, `search_issues`, `전수필터`, `Zod`, `SmartResolver` | • 이슈 검색 전수 필터 지원 사양 및 매핑 정책 확인 시<br>• Zod 스키마 및 RedmineClient 파라미터 확장 참조 시 | DL-0017: Redmine 이슈 검색(search_issues) REST API 전수 필터 지원 설계 |
 | **[[security_audit_report\|document/security_audit_report.md]]** | `보안`, `감사`, `security`, `audit`, `취약점`, `prompt-injection`, `CORS`, `dry_run`, `CVE`, `인증`, `업로드` | • MCP 서버 보안 취약점 및 개선 사항 전체 파악 시<br>• 간접 프롬프트 주입, CORS, 인증 관련 보안 이슈 확인 시<br>• 우선순위별 개선 로드맵 참조 시 | 2026-09-21 기준 전체 소스코드 보안 감사 결과 레포트 (종합 76/100, 11개 개선 항목) |
+| **[[DL-0018-cors-whitelist|document/decision_log/DL-0018-cors-whitelist.md]]** | `DL`, `cors`, `whitelist`, `화이트리스트`, `보안`, `CORS_ALLOWED_ORIGINS` | • CORS 화이트리스트 및 허용 Origin 설정 확인 시<br>• 브라우저 클라이언트 연동 정책 참조 시 | DL-0018: CORS 와일드카드 제거 및 환경변수 기반 화이트리스트 도입 |
+| **[[DL-0019-add-issue-note-dry-run|document/decision_log/DL-0019-add-issue-note-dry-run.md]]** | `DL`, `add_issue_note`, `dry_run`, `보안`, `댓글`, `프롬프트주입` | • 일감 댓글 추가(add_issue_note) 도구 dry_run 가드 확인 시<br>• 간접 프롬프트 주입 방어 정책 참조 시 | DL-0019: add_issue_note 도구에 dry_run 파라미터 추가 및 기본값 true 적용 |
 
 
 ---

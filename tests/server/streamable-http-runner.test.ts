@@ -1,3 +1,4 @@
+import { getCorsMiddleware } from "../../src/index.js";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import express from "express";
 import { createStreamableHttpRouter } from "../../src/server/streamable-http-runner.js";
@@ -242,5 +243,92 @@ describe("Streamable HTTP Transport Layer", () => {
       }),
     });
     expect(res.status).toBe(404);
+  });
+});
+
+describe("CORS Policy and Whitelist", () => {
+  let corsApp: express.Express;
+  let corsServer: Server;
+  let corsBaseUrl: string;
+  const originalEnv = process.env.CORS_ALLOWED_ORIGINS;
+
+  afterEach(async () => {
+    if (originalEnv !== undefined) {
+      process.env.CORS_ALLOWED_ORIGINS = originalEnv;
+    } else {
+      delete process.env.CORS_ALLOWED_ORIGINS;
+    }
+    if (corsServer) {
+      await new Promise<void>((resolve) => corsServer.close(() => resolve()));
+    }
+  });
+
+  const setupCorsServer = async () => {
+    corsApp = express();
+    corsApp.use(getCorsMiddleware());
+    corsApp.get("/test", (req, res) => res.json({ ok: true }));
+    corsApp.use((err: any, req: any, res: any, next: any) => {
+      if (err.message && err.message.includes("CORS policy")) {
+        res.status(403).json({ error: err.message });
+      } else {
+        next(err);
+      }
+    });
+
+    await new Promise<void>((resolve) => {
+      corsServer = corsApp.listen(0, "127.0.0.1", () => {
+        const addr = corsServer.address() as any;
+        corsBaseUrl = "http://127.0.0.1:" + addr.port + "/test";
+        resolve();
+      });
+    });
+  };
+
+  it("should allow request without origin (non-browser client)", async () => {
+    delete process.env.CORS_ALLOWED_ORIGINS;
+    await setupCorsServer();
+    const res = await fetch(corsBaseUrl);
+    expect(res.status).toBe(200);
+  });
+
+  it("should allow request from default whitelisted origin (localhost / 127.0.0.1)", async () => {
+    delete process.env.CORS_ALLOWED_ORIGINS;
+    await setupCorsServer();
+    const res = await fetch(corsBaseUrl, {
+      headers: { Origin: "http://localhost:5173" },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("access-control-allow-origin")).toBe("http://localhost:5173");
+  });
+
+  it("should reject request from unauthorized origin", async () => {
+    delete process.env.CORS_ALLOWED_ORIGINS;
+    await setupCorsServer();
+    const res = await fetch(corsBaseUrl, {
+      headers: { Origin: "http://malicious-site.com" },
+    });
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.error).toContain("CORS policy: Origin http://malicious-site.com not allowed");
+  });
+
+  it("should allow custom origin specified in CORS_ALLOWED_ORIGINS", async () => {
+    process.env.CORS_ALLOWED_ORIGINS = "https://my-dashboard.example.com, https://internal.company.com";
+    await setupCorsServer();
+    const res = await fetch(corsBaseUrl, {
+      headers: { Origin: "https://my-dashboard.example.com" },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("access-control-allow-origin")).toBe("https://my-dashboard.example.com");
+  });
+
+  it("should allow all origins if CORS_ALLOWED_ORIGINS contains wildcard *", async () => {
+    process.env.CORS_ALLOWED_ORIGINS = "*";
+    await setupCorsServer();
+    const res = await fetch(corsBaseUrl, {
+      headers: { Origin: "http://anywhere.com" },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("access-control-allow-origin")).toBe("http://anywhere.com");
   });
 });

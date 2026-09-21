@@ -10,6 +10,7 @@ describe('add_issue_note tool', () => {
       expect(parsed.issue_id).toBe(123);
       expect(parsed.notes).toBe('Hello world');
       expect(parsed.private_notes).toBe(false);
+      expect(parsed.dry_run).toBe(true);
     });
 
     it('should reject invalid issue_id', () => {
@@ -33,12 +34,31 @@ describe('add_issue_note tool', () => {
   });
 
   describe('Handler Logic', () => {
-    it('should call RedmineClient with correct parameters', async () => {
+    it('should perform dry_run by default and not call RedmineClient', async () => {
       const mockClient = {
         addIssueNote: vi.fn().mockResolvedValue({})
       } as unknown as RedmineClient;
       
-      const args = { issue_id: 123, notes: 'Test note', private_notes: true };
+      const args = { issue_id: 123, notes: 'Test note' };
+      const parsedArgs = addIssueNoteSchema.parse(args);
+      
+      const result = await addIssueNoteHandler(parsedArgs, mockClient);
+      
+      expect((mockClient as any).addIssueNote).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        message: "Dry run successful. No changes were made.",
+        issue_id: 123,
+        notes: "Test note",
+        private_notes: false,
+      });
+    });
+
+    it('should call RedmineClient when dry_run is explicitly false', async () => {
+      const mockClient = {
+        addIssueNote: vi.fn().mockResolvedValue({})
+      } as unknown as RedmineClient;
+      
+      const args = { issue_id: 123, notes: 'Test note', private_notes: true, dry_run: false };
       const parsedArgs = addIssueNoteSchema.parse(args);
       
       const result = await addIssueNoteHandler(parsedArgs, mockClient);
