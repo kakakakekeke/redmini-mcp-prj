@@ -18,7 +18,7 @@ tags:
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
 
-(현재 대기 중인 작업이 없습니다.)
+1. [ ] `test/e2e-expansion` : E2E 통합 테스트 시나리오 보강 (TC-05 쓰기 dry_run 가드, TC-06 헬스체크 및 CORS, TC-07 다중 사용자 교차 격리, TC-08 2단계 첨부파일 업로드)
 
 ## ✅ 완료된 작업 (Done)
 - [x] `feature/streamable-http-transport` : 레거시 SSE 전송 계층 제거 및 Streamable HTTP(`StreamableHTTPServerTransport`) & Stdio 이중 전송 계층 구축, `/health` 엔드포인트 및 CORS 미들웨어 추가, E2E 테스트 갱신
