@@ -18,7 +18,7 @@ tags:
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
 ### 🚨 P1 — 즉시 조치 (보안 감사 기반)
-* (현재 등록된 모든 P1 보안 작업이 완료되었습니다.)
+- [ ] 1. `fix/security-disable-http-key-fallback` : HTTP 모드에서 REDMINE_API_KEY 폴백 완전 차단 및 ALLOW_SERVER_KEY_FALLBACK 옵션 폐기 — [[DL-0024-disable-http-server-key-fallback]]
 
 ### ⚠️ P2 — 단기 조치 (보안 감사 기반, 1-2주)
 * (현재 등록된 모든 P2 보안 작업이 완료되었습니다.)
