@@ -1,19 +1,33 @@
 import type { Request, Response, NextFunction } from "express";
+import { timingSafeEqual } from "node:crypto";
 import { RedmineClient } from "../client/redmine.js";
 import { loadConfig } from "../utils/config.js";
 
-export function getAuthClient(headers: Record<string, string | string[] | undefined>): RedmineClient {
+export function safeTokenCompare(provided: string, expected: string): boolean {
+  const bufA = Buffer.from(provided);
+  const bufB = Buffer.from(expected);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
+export function getAuthClient(headers: Record<string, string | string[] | undefined> = {}): RedmineClient {
   const config = loadConfig();
+  const safeHeaders = headers && typeof headers === "object" ? headers : {};
   
-  const headerKey = Object.keys(headers).find(k => k.toLowerCase() === "x-redmine-api-key");
-  const userApiKeyRaw = headerKey ? headers[headerKey] : undefined;
+  const headerKey = Object.keys(safeHeaders).find(k => k.toLowerCase() === "x-redmine-api-key");
+  const userApiKeyRaw = headerKey ? safeHeaders[headerKey] : undefined;
   const userApiKey = Array.isArray(userApiKeyRaw) ? userApiKeyRaw[0] : userApiKeyRaw;
 
-  let apiKey = userApiKey;
-  if (!apiKey) {
-    const isStdio = process.env.TRANSPORT === "stdio";
-    if (isStdio) {
-      apiKey = config.REDMINE_API_KEY;
+  let apiKey = typeof userApiKey === "string" ? userApiKey.trim() : undefined;
+  if (!apiKey || apiKey.length === 0) {
+    apiKey = undefined;
+  }
+
+  const isStdio = process.env.TRANSPORT === "stdio";
+  if (!apiKey && isStdio) {
+    const fallback = config.REDMINE_API_KEY?.trim();
+    if (fallback && fallback.length > 0) {
+      apiKey = fallback;
     }
   }
 
@@ -25,7 +39,8 @@ export function getAuthClient(headers: Record<string, string | string[] | undefi
 }
 
 export function verifyHttpBearerToken(req: Request, res: Response, next: NextFunction) {
-  const requiredToken = process.env.MCP_AUTH_TOKEN;
+  const rawRequiredToken = process.env.MCP_AUTH_TOKEN;
+  const requiredToken = typeof rawRequiredToken === "string" ? rawRequiredToken.trim() : undefined;
   if (!requiredToken) {
     return next();
   }
@@ -40,7 +55,12 @@ export function verifyHttpBearerToken(req: Request, res: Response, next: NextFun
   }
 
   const match = authHeader.match(/^Bearer\s+(.+)$/i);
-  if (!match || match[1] !== requiredToken) {
+  if (!match) {
+    return res.status(401).json({ error: "Unauthorized: Invalid or missing MCP Bearer Token" });
+  }
+
+  const providedToken = match[1].trim();
+  if (!safeTokenCompare(providedToken, requiredToken)) {
     return res.status(401).json({ error: "Unauthorized: Invalid or missing MCP Bearer Token" });
   }
 
