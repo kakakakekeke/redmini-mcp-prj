@@ -1,7 +1,7 @@
 ---
 title: "통합 테스트(E2E) 시나리오 및 결과서"
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-09-21
 tags:
   - test
   - uat
@@ -63,7 +63,7 @@ tags:
 *   **기대 결과**:
     1. `dry_run: true` 호출 시 Mock Redmine으로 POST 요청이 전달되지 않고, `[DRY_RUN 미리보기]` 텍스트 및 시뮬레이션 결과가 반환됨.
     2. `dry_run: false` 호출 시 실제 Mock Redmine으로 POST 요청이 전달되어 일감 ID가 생성되고 정상 완료 응답 반환.
-*   **테스트 결과**: `[대기중]`
+*   **테스트 결과**: `[Pass] (Node.js/Express Mock Server와 MCP SDK Client를 이용한 E2E 자동화 스크립트로 검증 완료)`
 
 ### [TC-06] 인프라 엔드포인트 검증 (경량 /health 및 CORS 프리플라이트)
 *   **사전 조건**: Express 서버 구동 (`TRANSPORT=http`).
@@ -73,7 +73,7 @@ tags:
 *   **기대 결과**:
     1. `GET /health`는 MCP 핸드셰이크 없이 즉시 200 OK와 `{ status: "ok" }` 반환.
     2. `OPTIONS /mcp`는 204 No Content(또는 200) 및 `Access-Control-Allow-Origin: *` 헤더 반환.
-*   **테스트 결과**: `[대기중]`
+*   **테스트 결과**: `[Pass] (Node.js/Express Mock Server와 MCP SDK Client를 이용한 E2E 자동화 스크립트로 검증 완료)`
 
 ### [TC-07] 다중 사용자 동시 접속 교차 격리 검증 (User A vs User B)
 *   **사전 조건**: 동일한 Streamable HTTP 서버 (:33333) 구동.
@@ -83,7 +83,7 @@ tags:
 *   **기대 결과**:
     1. 클라이언트 A의 응답에는 "User A Issue"만 포함되고,
     2. 클라이언트 B의 응답에는 "User B Issue"만 포함되어 세션 간 권한 혼선이 발생하지 않음.
-*   **테스트 결과**: `[대기중]`
+*   **테스트 결과**: `[Pass] (Node.js/Express Mock Server와 MCP SDK Client를 이용한 E2E 자동화 스크립트로 검증 완료)`
 
 ### [TC-08] 2단계 첨부파일 업로드 및 일감 연동 파이프라인
 *   **사전 조건**: Mock Redmine `POST /uploads.json` 및 `POST /issues.json` 준비.
@@ -93,4 +93,4 @@ tags:
 *   **기대 결과**:
     1. `upload_attachment` 호출로 토큰이 정상 발급됨.
     2. 생성된 일감에 해당 토큰의 첨부파일이 바인딩되어 성공 응답 반환.
-*   **테스트 결과**: `[대기중]`
+*   **테스트 결과**: `[Pass] (Node.js/Express Mock Server와 MCP SDK Client를 이용한 E2E 자동화 스크립트로 검증 완료)`

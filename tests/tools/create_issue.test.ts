@@ -29,6 +29,15 @@ describe('create_issue tool', () => {
       const parsed = createIssueSchema.parse(args);
       expect(parsed.dry_run).toBe(true);
     });
+
+    it('should validate uploads parameter', () => {
+      const args = {
+        project_id: '1',
+        subject: 'Test',
+        uploads: [{ token: 'sample_token', filename: 'test.txt' }],
+      };
+      expect(() => createIssueSchema.parse(args)).not.toThrow();
+    });
   });
 
   describe('Handler Logic', () => {
@@ -76,6 +85,35 @@ describe('create_issue tool', () => {
         assigned_to_id: 5
       }) });
       expect(result).toEqual({ issue: { id: 123 } });
+    });
+
+    it('should include uploads in payload when provided', async () => {
+      const mockClient = {
+        createIssue: vi.fn().mockResolvedValue({ issue: { id: 124 } }),
+        getProjects: vi.fn().mockResolvedValue({ projects: [] }),
+        getTrackers: vi.fn().mockResolvedValue({ trackers: [] }),
+        getStatuses: vi.fn().mockResolvedValue({ issue_statuses: [] }),
+        getPriorities: vi.fn().mockResolvedValue({ issue_priorities: [] }),
+        getUsers: vi.fn().mockResolvedValue({ users: [] }),
+      };
+
+      const args = {
+        project_id: 'test-project',
+        subject: 'Issue with attachment',
+        uploads: [{ token: 'tok_123', filename: 'file.txt' }],
+        dry_run: false,
+      };
+      const parsedArgs = createIssueSchema.parse(args);
+      const result = await createIssueHandler(parsedArgs, mockClient as any);
+
+      expect(mockClient.createIssue).toHaveBeenCalledWith({
+        issue: expect.objectContaining({
+          project_id: 'test-project',
+          subject: 'Issue with attachment',
+          uploads: [{ token: 'tok_123', filename: 'file.txt' }],
+        }),
+      });
+      expect(result).toEqual({ issue: { id: 124 } });
     });
   });
 });
