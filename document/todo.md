@@ -18,7 +18,8 @@ tags:
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
 ### 🚨 P1 — 즉시 조치 (보안 감사 기반)
-1. [ ] `fix/security-get-projects-hardening` : get_projects 경로 조작 방어, 리졸버 캐시 보존 및 404/403 예외 처리 강화 — [[DL-0026-get-projects-security-hardening]]
+1. [ ] `fix/security-auth-hardening` : 인증 미들웨어 공백 키 우회 방어, 타이밍 공격 방어(timingSafeEqual), 401 JSON 에러 핸들러 도입 — [[DL-0024-disable-http-server-key-fallback]]
+2. [ ] `fix/security-get-projects-hardening` : get_projects 경로 조작 방어, 리졸버 캐시 보존 및 404/403 예외 처리 강화 — [[DL-0026-get-projects-security-hardening]]
 
 ### ⚠️ P2 — 단기 조치 (보안 감사 기반, 1-2주)
 * (현재 등록된 모든 P2 보안 작업이 완료되었습니다.)
