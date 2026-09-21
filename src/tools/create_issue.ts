@@ -16,6 +16,17 @@ export const createIssueSchema = z.object({
   assignee: z.string().optional().describe("담당자 이름 또는 로그인 아이디. Smart Name Resolver 자동 변환"),
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid due_date").optional().describe("만료일 (YYYY-MM-DD)"),
   estimated_hours: z.number().positive().optional().describe("추정 시간"),
+  uploads: z
+    .array(
+      z.object({
+        token: z.string().describe("첨부파일 업로드 토큰"),
+        filename: z.string().optional().describe("파일명"),
+        description: z.string().optional().describe("첨부파일 설명"),
+        content_type: z.string().optional().describe("파일의 MIME 타입"),
+      })
+    )
+    .optional()
+    .describe("첨부파일 목록 (upload_attachment에서 발급받은 token 포함)"),
   dry_run: z.boolean().default(true).describe("기본값이 true이며 안전을 위해 미리보기를 제공합니다. 실제 생성을 원할 경우에만 명시적으로 false로 전달하세요."),
 });
 
@@ -60,10 +71,11 @@ export async function createIssueHandler(args: CreateIssueArgs, client: RedmineC
   if (assigned_to_id !== undefined) payload.assigned_to_id = assigned_to_id;
   if (args.due_date !== undefined) payload.due_date = args.due_date;
   if (args.estimated_hours !== undefined) payload.estimated_hours = args.estimated_hours;
+  if (args.uploads !== undefined) payload.uploads = args.uploads;
 
   if (args.dry_run) {
     return {
-      message: "dry_run is true. Issue will not be created. Please ask user to confirm.",
+      message: "[DRY_RUN 미리보기] dry_run is true. Issue will not be created. Please ask user to confirm.",
       dry_run: true,
       payload: { issue: payload }
     };
