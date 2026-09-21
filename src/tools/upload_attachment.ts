@@ -5,10 +5,14 @@ export const uploadAttachmentSchema = z.object({
   filename: z
     .string()
     .min(1, "파일명은 필수입니다")
+    .max(255)
+    .regex(/^[^/\\:*?"<>|]+$/, "파일명에 경로 구분자(/, \\)나 금지된 특수문자를 포함할 수 없습니다")
+    .refine((name) => !name.includes(".."), "경로 순회(..)는 허용되지 않습니다")
     .describe("업로드할 파일명 (예: screenshot.png, document.pdf)"),
   content: z
     .string()
     .min(1, "파일 내용은 비어 있을 수 없습니다")
+    .max(10 * 1024 * 1024, "파일 내용은 최대 10MB까지 허용됩니다")
     .describe("파일 내용 (일반 텍스트 또는 Base64로 인코딩된 문자열)"),
   content_type: z
     .string()

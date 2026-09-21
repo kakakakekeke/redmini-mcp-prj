@@ -119,5 +119,26 @@ describe('get_my_account tool', () => {
       const parsedArgs = getMyAccountSchema.parse(args);
       await expect(getMyAccountHandler(parsedArgs, mockClient as any)).rejects.toThrow('Internal Server Error');
     });
+
+    it('should redact api_key if present in user response', async () => {
+      const mockUserData = {
+        user: {
+          id: 1,
+          login: 'admin',
+          firstname: 'Admin',
+          lastname: 'User',
+          api_key: '1234567890abcdef',
+        },
+      };
+      const mockClient = {
+        getMyAccount: vi.fn().mockResolvedValue(mockUserData),
+      };
+
+      const args = {};
+      const parsedArgs = getMyAccountSchema.parse(args);
+      const result: any = await getMyAccountHandler(parsedArgs, mockClient as any);
+
+      expect(result.user.api_key).toBe('[REDACTED]');
+    });
   });
 });

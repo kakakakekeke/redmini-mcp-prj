@@ -72,6 +72,36 @@ describe("upload_attachment tool", () => {
       };
       expect(() => uploadAttachmentSchema.parse(args as any)).toThrow();
     });
+
+    it("should reject filename with path traversal or directory separators", () => {
+      const invalidFilenames = [
+        "../secret.txt",
+        "folder/file.txt",
+        "..\\win.txt",
+        "sub/dir/test.png",
+        "test:name.txt",
+        "file?name.txt",
+        "file*name.txt",
+      ];
+      for (const fn of invalidFilenames) {
+        expect(() =>
+          uploadAttachmentSchema.parse({
+            filename: fn,
+            content: "hello",
+          })
+        ).toThrow();
+      }
+    });
+
+    it("should reject content exceeding 10MB", () => {
+      const oversizedContent = "a".repeat(10 * 1024 * 1024 + 1);
+      expect(() =>
+        uploadAttachmentSchema.parse({
+          filename: "valid.txt",
+          content: oversizedContent,
+        })
+      ).toThrow("파일 내용은 최대 10MB까지 허용됩니다");
+    });
   });
 
   describe("Handler Logic", () => {

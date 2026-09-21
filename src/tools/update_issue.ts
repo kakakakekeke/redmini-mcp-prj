@@ -5,7 +5,7 @@ export const updateIssueSchema = z.object({
   issue_id: z.number().describe("수정할 일감의 숫자 ID"),
   status_id: z.number().optional().describe("변경할 상태 ID (선택사항)"),
   notes: z.string().optional().describe("일감에 추가할 댓글 (선택사항)"),
-  dry_run: z.boolean().optional().default(false).describe("실제 변경을 수행하지 않고 유효성만 검사할지 여부"),
+  dry_run: z.boolean().optional().default(true).describe("실제 변경을 수행하지 않고 유효성만 검사할지 여부 (기본값: true)"),
 });
 
 export type UpdateIssueArgs = z.infer<typeof updateIssueSchema>;

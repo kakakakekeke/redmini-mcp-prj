@@ -18,13 +18,9 @@ tags:
 > 3. **사용자 승인(Review) 필수**: 에이전트는 대기열에 새로운 작업을 추가하거나 순서를 변경할 경우, 반드시 사용자(USER)에게 그 이유를 설명하고 승인을 받은 뒤에만 커밋해야 합니다.
 
 ### 🚨 P1 — 즉시 조치 (보안 감사 기반)
-- [ ] `fix/security-get-my-account-api-key` : `get_my_account` 도구 응답에서 `api_key` 필드 제거/마스킹 처리 (LLM 컨텍스트 API Key 노출 차단) — [[security_audit_report]] 2-4항
-- [ ] `fix/security-update-issue-dry-run` : `update_issue` dry_run 기본값 `false` → `true` 수정 (DL-0007 결정 준수, 전체 쓰기 도구 일관성 회복) — [[security_audit_report]] 2-2항
-- [ ] `fix/security-upload-attachment-limit` : `upload_attachment` content 최대 크기 상한(10MB) 추가 및 filename 경로 탈출(`../`) 방어 정규식 적용 — [[security_audit_report]] 3-3항
+* (현재 등록된 모든 P1 보안 작업이 완료되었습니다.)
 
 ### ⚠️ P2 — 단기 조치 (보안 감사 기반, 1-2주)
-- [ ] `fix/security-cors-whitelist` : CORS 와일드카드(`*`) → `CORS_ALLOWED_ORIGINS` 환경변수 기반 화이트리스트로 교체 — [[security_audit_report]] 2-1항
-- [ ] `fix/security-add-issue-note-dry-run` : `add_issue_note` 도구에 `dry_run` 파라미터 추가(`default(true)`) — 간접 프롬프트 주입 시 즉시 댓글 게시 위험 — [[security_audit_report]] 2-3항
 - [ ] `fix/security-http-auth-middleware` : HTTP 모드 `/mcp` 엔드포인트 Bearer 토큰 인증 미들웨어 추가, `REDMINE_API_KEY` 폴백을 환경변수 플래그로 제어 — [[security_audit_report]] 3-2항
 
 ### 📌 P3 — 중기 조치 (보안 감사 기반, 1개월)
@@ -34,6 +30,11 @@ tags:
 - [ ] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
 
 ## ✅ 완료된 작업 (Done)
+- [x] `fix/security-get-my-account-api-key` : `get_my_account` 도구 응답에서 `api_key` 필드 제거/마스킹 처리 (LLM 컨텍스트 API Key 노출 차단) — [[security_audit_report]] 2-4항
+- [x] `fix/security-update-issue-dry-run` : `update_issue` dry_run 기본값 `false` → `true` 수정 (DL-0007 결정 준수, 전체 쓰기 도구 일관성 회복) — [[security_audit_report]] 2-2항
+- [x] `fix/security-upload-attachment-limit` : `upload_attachment` content 최대 크기 상한(10MB) 추가 및 filename 경로 탈출(`../`) 방어 정규식 적용 — [[security_audit_report]] 3-3항
+- [x] `fix/security-cors-whitelist` : CORS 와일드카드(`*`) → `CORS_ALLOWED_ORIGINS` 환경변수 기반 화이트리스트로 교체 — [[security_audit_report]] 2-1항, [[DL-0018-cors-whitelist]]
+- [x] `fix/security-add-issue-note-dry-run` : `add_issue_note` 도구에 `dry_run` 파라미터 추가(`default(true)`) — 간접 프롬프트 주입 시 즉시 댓글 게시 위험 방어 — [[security_audit_report]] 2-3항, [[DL-0019-add-issue-note-dry-run]]
 - [x] `feature/search-issues-full-filters` : Redmine 공식 REST API(GET /issues.json) 전수 필터 및 커스텀 필드(cf_X), Smart Name Resolver 연동 확장
 - [x] `test/e2e-expansion` : E2E 통합 테스트 시나리오 보강 (TC-05 쓰기 dry_run 가드, TC-06 헬스체크 및 CORS, TC-07 다중 사용자 교차 격리, TC-08 2단계 첨부파일 업로드)
 

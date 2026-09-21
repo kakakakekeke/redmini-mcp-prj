@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { updateIssueHandler } from "../../src/tools/update_issue";
+import { updateIssueHandler, updateIssueSchema } from "../../src/tools/update_issue";
 import { RedmineClient } from "../../src/client/redmine";
 
 describe("updateIssueHandler", () => {
@@ -158,5 +158,29 @@ describe("updateIssueHandler", () => {
     };
 
     await expect(updateIssueHandler(args, mockClient as unknown as RedmineClient)).rejects.toThrow("Custom field cannot be blank");
+  });
+
+  it("should default dry_run to true when omitted in schema and prevent API call", async () => {
+    mockClient.getIssueDetails.mockResolvedValue({
+      issue: {
+        id: 1,
+        status: { id: 1, name: "New" },
+      },
+    });
+
+    const rawArgs = {
+      issue_id: 1,
+      notes: "Default dry_run test",
+    };
+    const parsedArgs = updateIssueSchema.parse(rawArgs);
+    expect(parsedArgs.dry_run).toBe(true);
+
+    const result = await updateIssueHandler(parsedArgs, mockClient as unknown as RedmineClient);
+
+    expect(mockClient.updateIssue).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      message: "Dry run successful. No changes were made.",
+      updates: { notes: "Default dry_run test" },
+    });
   });
 });
