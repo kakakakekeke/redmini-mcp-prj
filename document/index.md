@@ -70,6 +70,7 @@ status: active
 | **[[DL-0023-rate-limiting|document/decision_log/DL-0023-rate-limiting.md]]** | `DL`, `보안`, `rate-limit`, `속도제한`, `express-rate-limit`, `DoS`, `brute-force` | • HTTP 모드 엔드포인트(/mcp, /health) Rate Limiting 정책 확인 시<br>• express-rate-limit 미들웨어 설정 및 임계치 참조 시 | DL-0023: express-rate-limit 미들웨어 도입 및 HTTP 엔드포인트 Rate Limiting 적용 |
 | **[[DL-0024-disable-http-server-key-fallback|document/decision_log/DL-0024-disable-http-server-key-fallback.md]]** | `DL`, `보안`, `인증`, `auth`, `http`, `fallback`, `REDMINE_API_KEY`, `대리인취약점` | • HTTP 모드 API 키 폴백 차단 정책 및 사유 확인 시<br>• Stdio 전용 서버 키 사용 정책 참조 시 | DL-0024: HTTP 모드 REDMINE_API_KEY 서버 키 폴백 완전 차단 |
 | **[[DL-0025-project-custom-fields-support|document/decision_log/DL-0025-project-custom-fields-support.md]]** | `DL`, `커스텀필드`, `custom_fields`, `get_projects`, `project_id`, `issue_custom_fields` | • get_projects 도구의 project_id 파라미터 확장 사양 확인 시<br>• 일반 사용자 권한의 일감 커스텀 필드 조회 정책 참조 시 | DL-0025: get_projects 도구 확장 및 프로젝트별 일감 커스텀 필드(issue_custom_fields) 조회 지원 |
+| **[[DL-0026-get-projects-security-hardening|document/decision_log/DL-0026-get-projects-security-hardening.md]]** | `DL`, `보안`, `경로조작`, `path-traversal`, `get_projects`, `인코딩`, `리졸버캐시` | • get_projects 도구 경로 조작 방어 및 404/403 예외 처리 확인 시<br>• SmartNameResolver 인스턴스 TTL 캐시 보존 정책 참조 시 | DL-0026: get_projects 도구 및 getProject API 보안 강화 (경로 조작 방어, 리졸버 캐시 보존, 예외 복원력) |
 
 
 ---
