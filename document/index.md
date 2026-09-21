@@ -60,6 +60,8 @@ status: active
 | **[[DL-0015-get-attachment-content-design|document/decision_log/DL-0015-get-attachment-content-design.md]]** | `DL`, `첨부파일`, `본문`, `내용`, `다운로드`, `get_attachment_content`, `attachment` | • 첨부파일 본문 조회(get_attachment_content) 도구 설계 및 사양 확인 시<br>• 텍스트/바이너리 자동 판별 및 Truncation 가드레일 참조 시 | DL-0015: 첨부파일 본문 내용 조회(get_attachment_content) 도구 설계 |
 | **[[0004-transition-to-streamable-http|document/adr/0004-transition-to-streamable-http.md]]** | `ADR`, `StreamableHTTP`, `SSE`, `stdio`, `전송계층`, `아키텍처` | • 레거시 SSE 폐기 및 Streamable HTTP 도입 배경 확인 시<br>• 전송 계층 이중화(Streamable HTTP / Stdio) 사양 참조 시 | ADR-0004: 레거시 SSE 전송 계층 폐기 및 Streamable HTTP 전송 계층 채택 |
 | **[[DL-0016-cors-middleware|document/decision_log/DL-0016-cors-middleware.md]]** | `DL`, `cors`, `미들웨어`, `웹클라이언트`, `브라우저` | • 웹 클라이언트 및 브라우저 에이전트 연동용 CORS 설정 확인 시<br>• cors 패키지 도입 사유 참조 시 | DL-0016: 웹 클라이언트 및 브라우저 에이전트 연동을 위한 cors 미들웨어 도입 |
+| **[[DL-0017-search-issues-full-filters-design|document/decision_log/DL-0017-search-issues-full-filters-design.md]]** | `DL`, `이슈검색`, `필터`, `search_issues`, `전수필터`, `Zod`, `SmartResolver` | • 이슈 검색 전수 필터 지원 사양 및 매핑 정책 확인 시<br>• Zod 스키마 및 RedmineClient 파라미터 확장 참조 시 | DL-0017: Redmine 이슈 검색(search_issues) REST API 전수 필터 지원 설계 |
+
 
 ---
 

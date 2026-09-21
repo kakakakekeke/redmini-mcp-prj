@@ -54,11 +54,48 @@ LLM(Claude/Cursor)이 불필요하게 많은 도구를 가지지 않도록(Tool 
 일감을 검색하고 필터링합니다. 에이전트가 "내 일감 찾아줘", "진행중인 결함 보여줘" 등의 요청을 처리할 때 사용합니다.
 
 *   **Parameters:**
-    *   `project_id` (string, optional): 프로젝트 ID 또는 식별자.
-    *   `status_id` (string, optional): 일감 상태. *참고: AGENTS.md 지침에 따라 숫자 ID뿐만 아니라 "open", "closed" 같은 문자열을 받아 서버 내부에서 안전하게 변환하도록 설계.*
-    *   `assigned_to_id` (string, optional): 담당자 ID. `"me"`를 입력하면 현재 API 토큰의 소유자 일감만 안전하게 필터링하여 검색.
-    *   `query` (string, optional): 제목 및 본문 검색어. (검색어 길이를 제한하여 DoS 방지)
-    *   `limit` (integer, optional): 반환할 최대 결과 수. (기본: 10, 최대: 50으로 하드 리밋 설정)
+    *   **식별자 및 계층**:
+        *   `project_id` (string, optional): 프로젝트 ID (숫자) 또는 영문 슬러그(identifier).
+        *   `project` (string, optional): 프로젝트 이름. Smart Name Resolver가 ID로 자동 매핑.
+        *   `subproject_id` (string, optional): 하위 프로젝트 필터 (`!*`: 제외, `*`: 전체 포함, 또는 특정 하위 프로젝트 ID).
+        *   `issue_id` (string, optional): 특정 일감 ID (단일 `123` 또는 쉼표 구분 `123,456`).
+        *   `parent_id` (string, optional): 상위 일감 숫자 ID.
+    *   **상태 / 유형 / 범주 / 버전 / 우선순위**:
+        *   `status_id` (string, optional): 일감 상태 (`open`, `closed`, `*`, 또는 숫자 ID).
+        *   `status` (string, optional): 일감 상태명 (예: '신규', '진행중', '해결'). Smart Name Resolver 자동 변환.
+        *   `tracker_id` (string, optional): 트래커 숫자 ID.
+        *   `tracker` (string, optional): 트래커 이름 (예: '결함', '기능', '지원'). Smart Name Resolver 자동 변환.
+        *   `priority_id` (string, optional): 우선순위 숫자 ID.
+        *   `priority` (string, optional): 우선순위 이름 (예: '낮음', '보통', '높음', '긴급'). Smart Name Resolver 자동 변환.
+        *   `category_id` (string, optional): 일감 범주(Category) 숫자 ID.
+        *   `fixed_version_id` (string, optional): 목표 버전(Version/Milestone) 숫자 ID.
+    *   **담당자 / 작성자**:
+        *   `assigned_to_id` (string, optional): 담당자 ID (`me` 또는 숫자 ID).
+        *   `assigned_to` (string, optional): 담당자 이름 또는 로그인 계정명. Smart Name Resolver 자동 변환.
+        *   `author_id` (string, optional): 작성자 ID (`me` 또는 숫자 ID).
+        *   `author` (string, optional): 작성자 이름 또는 로그인 계정명. Smart Name Resolver 자동 변환.
+    *   **검색 및 쿼리**:
+        *   `query_id` (string, optional): Redmine에 저장된 사용자 정의 검색(Saved Query) 숫자 ID.
+        *   `query` (string, optional): 제목/본문 검색 키워드 (최대 100자, `subject: ~query`로 자동 매핑).
+        *   `subject` (string, optional): 제목 검색 필터 (예: `~로그인` 또는 `로그인`).
+        *   `description` (string, optional): 본문/설명 검색 필터 (예: `~오류`).
+    *   **날짜 필터 (연산자 지원)**:
+        *   `created_on` (string, optional): 생성 일시 필터 (`>=2026-09-01`, `<=2026-09-20`, `><2026-09-01|2026-09-20`, `t`, `w` 등).
+        *   `updated_on` (string, optional): 수정 일시 필터.
+        *   `start_date` (string, optional): 시작 일자 필터.
+        *   `due_date` (string, optional): 완료 기한(마감일) 필터.
+        *   `closed_on` (string, optional): 완료 일시 필터.
+    *   **수치 및 진척도**:
+        *   `estimated_hours` (string, optional): 추정 시간 필터 (`>=4`, `<=10` 등).
+        *   `done_ratio` (string, optional): 진척도(%) 필터 (`>=50`, `=100` 등).
+    *   **사용자 정의 필드 (Custom Fields)**:
+        *   `custom_fields` (object, optional): 사용자 정의 필드 객체 (`{ "1": "값" }` 입력 시 `cf_1=값`으로 자동 변환).
+    *   **정렬, 페이징, 포함**:
+        *   `sort` (string, optional): 정렬 기준 (예: `updated_on:desc`, `priority:desc,updated_on:desc`, `id:asc`).
+        *   `limit` (integer, optional): 반환할 최대 결과 수 (1~100, 기본값: 10).
+        *   `offset` (integer, optional): 페이징 오프셋 (0 이상의 정수).
+        *   `include` (string, optional): 추가 포함 리소스 (쉼표 구분: `attachments,relations,journals`).
+
 
 ### 3.2. `get_issue_details`
 단일 일감의 전체 정보를 가져옵니다. 에이전트가 일감의 구체적인 내용, 히스토리(Journal) 등을 분석할 때 사용합니다.
