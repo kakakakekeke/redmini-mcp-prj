@@ -602,6 +602,69 @@ it("should normalize 204 No Content or empty data to success message on update",
     });
   });
 
+  describe("project files", () => {
+    it("should call GET /projects/:id/files.json with encoded project id", async () => {
+      const mockGet = vi.fn().mockResolvedValue({ data: { files: [{ id: 1, filename: "a.zip" }] } });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getProjectFiles(" my project ");
+      expect(mockGet).toHaveBeenCalledWith("/projects/my%20project/files.json");
+      expect(result).toEqual({ files: [{ id: 1, filename: "a.zip" }] });
+    });
+
+    it("should POST /projects/:id/files.json with file payload and normalize 204", async () => {
+      const mockPost = vi.fn().mockResolvedValue({ status: 204, data: "" });
+      (client as any).api = { post: mockPost };
+
+      const fileData = { token: "1.abc", description: "pkg", version_id: 3 };
+      const result = await client.addProjectFile(5, fileData);
+      expect(mockPost).toHaveBeenCalledWith("/projects/5/files.json", { file: fileData });
+      expect(result).toEqual({ message: "File registered to project 5 successfully" });
+    });
+
+    it("should return response data when POST returns a body", async () => {
+      const mockPost = vi.fn().mockResolvedValue({ status: 200, data: { file: { id: 9 } } });
+      (client as any).api = { post: mockPost };
+
+      const result = await client.addProjectFile("p?x", { token: "1.abc" });
+      expect(mockPost).toHaveBeenCalledWith("/projects/p%3Fx/files.json", { file: { token: "1.abc" } });
+      expect(result).toEqual({ file: { id: 9 } });
+    });
+
+    it("should encode project id in getProjectVersions", async () => {
+      const mockGet = vi.fn().mockResolvedValue({ data: { versions: [] } });
+      (client as any).api = { get: mockGet };
+      await client.getProjectVersions("a#b?c");
+      expect(mockGet).toHaveBeenCalledWith("/projects/a%23b%3Fc/versions.json");
+    });
+
+    it("should normalize an empty 200 response from addProjectFile", async () => {
+      (client as any).api = { post: vi.fn().mockResolvedValue({ status: 200, data: "" }) };
+      const result = await client.addProjectFile(5, { token: "1.abc" });
+      expect(result).toEqual({ message: "File registered to project 5 successfully" });
+    });
+
+    it("should propagate errors", async () => {
+      (client as any).api = {
+        get: vi.fn().mockRejectedValue(new Error("get failed")),
+        post: vi.fn().mockRejectedValue(new Error("post failed")),
+      };
+      await expect(client.getProjectFiles(1)).rejects.toThrow("get failed");
+      await expect(client.addProjectFile(1, { token: "1.a" })).rejects.toThrow("post failed");
+    });
+
+    it("should reject dot-segment project ids before calling the API", async () => {
+      const get = vi.fn();
+      const post = vi.fn();
+      (client as any).api = { get, post };
+      await expect(client.getProjectFiles("..")).rejects.toThrow("Invalid project id");
+      await expect(client.addProjectFile(" . ", { token: "1.a" })).rejects.toThrow("Invalid project id");
+      await expect(client.getProjectVersions("")).rejects.toThrow("Invalid project id");
+      expect(get).not.toHaveBeenCalled();
+      expect(post).not.toHaveBeenCalled();
+    });
+  });
+
   describe("uploadFile", () => {
     it("should call POST /uploads.json with binary content and headers", async () => {
       const mockPost = vi.fn().mockResolvedValue({

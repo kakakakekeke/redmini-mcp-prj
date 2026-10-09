@@ -22,6 +22,7 @@ import { manageIssueRelationHandler, manageIssueRelationSchema } from "./tools/m
 import { manageWatchersHandler, manageWatchersSchema } from "./tools/manage_watchers.js";
 import { manageVersionsHandler, manageVersionsSchema } from "./tools/manage_versions.js";
 import { uploadAttachmentHandler, uploadAttachmentSchema } from "./tools/upload_attachment.js";
+import { manageProjectFilesHandler, manageProjectFilesSchema } from "./tools/manage_project_files.js";
 import { getAttachmentContentHandler, getAttachmentContentSchema } from "./tools/get_attachment_content.js";
 import { logger } from "./utils/logger.js";
 
@@ -186,11 +187,21 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
 
   server.tool(
     "upload_attachment",
-    "Redmine에 파일(텍스트 또는 Base64 인코딩 바이너리/이미지)을 업로드하고 첨부 토큰(token)을 발급받습니다. 발급된 토큰은 일감 생성(create_issue) 또는 수정(update_issue) 시 uploads 필드에 전달하여 첨부 파일로 연동할 수 있습니다.",
+    "Redmine에 파일(텍스트 또는 Base64 인코딩 바이너리/이미지)을 업로드하고 첨부 토큰(token)을 발급받습니다. 발급된 토큰은 일감 생성(create_issue) 또는 수정(update_issue) 시 uploads 필드에 전달하여 첨부 파일로 연동하거나, manage_project_files(action: add)로 프로젝트 파일 탭에 등록할 수 있습니다.",
     uploadAttachmentSchema.shape,
     async (args) => {
       const result = await uploadAttachmentHandler(args as any, client);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "manage_project_files",
+    "프로젝트 '파일(Files)' 탭을 조회하거나, upload_attachment 로 발급받은 토큰을 파일 탭에 등록합니다 (Redmine 3.4+). 등록(add) 시 버전은 version_id 또는 버전 이름(version)으로 지정할 수 있으며, 기본값이 true인 dry_run 파라미터를 통해 안전한 미리보기를 제공합니다. 실제 등록을 원할 경우에만 명시적으로 dry_run: false로 전달하세요.",
+    manageProjectFilesSchema.shape,
+    async (args) => {
+      const result = await manageProjectFilesHandler(args as any, client);
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
 

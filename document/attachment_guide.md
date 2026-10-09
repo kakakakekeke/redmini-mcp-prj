@@ -1,7 +1,7 @@
 ---
 title: Redmine 2단계 파일 첨부 및 파일 탭 연동 가이드 (File Attachment Guide)
 created: 2026-09-20
-updated: 2026-09-20
+updated: 2026-10-09
 tags:
   - guide
   - reference
@@ -142,6 +142,9 @@ flowchart TD
   }
   ```
 
+> [!tip] MCP 도구로 등록하기 (`manage_project_files`, [[DL-0032-project-files|DL-0032]])
+> `manage_project_files(action: "add", project_id, token, filename?, description?, version_id? | version?)` 으로 위 요청을 보냅니다. `version` 에 버전 이름(예: `"v1.0"`)을 주면 ID로 자동 매핑되며, 기본값 `dry_run: true` 로 미리보기 후 `dry_run: false` 로 재호출해야 실제 등록됩니다. 등록 결과는 `manage_project_files(action: "list", project_id)` 로 확인합니다.
+
 ---
 
 ## 4. 확인 및 검증 방법
@@ -150,7 +153,7 @@ flowchart TD
    - `get_issue_details(issue_id: 3, include_attachments: true)` 도구 호출.
    - 웹 브라우저: `http://localhost:3000/issues/3` 하단 첨부파일 영역 확인.
 2. **프로젝트 파일 탭 확인**:
-   - `GET /projects/{project_id}/files.json` 호출.
+   - `manage_project_files(action: "list", project_id)` 도구 호출 (`GET /projects/{project_id}/files.json`).
    - 웹 브라우저: `http://localhost:3000/projects/{project_id}/files` 확인.
 3. **디스크 물리 파일 직접 확인 (Docker 인프라)**:
    ```bash
