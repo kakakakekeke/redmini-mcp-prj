@@ -1,6 +1,6 @@
 #!/bin/bash
 # PreToolUse(Edit|Write|MultiEdit|NotebookEdit): main 저장소에서 화이트리스트 외 파일 수정 차단.
-# 규칙은 .agents/scripts/enforce_worktree.sh(Antigravity)와 동일하다.
+# 허용 경로는 .agents/main_allowlist 를 Antigravity 훅·pre-commit 과 공유한다.
 . "${0%/*}/lib.sh"
 read_hook_input
 target=$(jq -r '.tool_input.file_path // .tool_input.notebook_path // ""' <<<"$input")
@@ -34,10 +34,10 @@ abs="$(cd "$dir" && pwd -P)/${target#"$dir"}"
 abs=${abs//\/\//\/}
 rel=${abs#"$toplevel/"}
 
-case "$rel" in
-  document/todo.md | document/index.md | document/decision_log/* | document/adr/* | .env)
-    exit 0 ;;
-esac
+# 허용 경로 단일 기준: .agents/main_allowlist (DL-0028). 보호 대상 저장소의 정책 파일을 읽는다.
+MAIN_ALLOWLIST_FILE="$toplevel/.agents/main_allowlist"   # 환경변수로 교체 불가
+. "${0%/*}/../../.agents/scripts/main_allowlist.sh"
+is_main_allowed "$rel" && exit 0
 
 # 병합 충돌 해결 중인 파일은 허용
 git_dir=$(git -C "$toplevel" rev-parse --absolute-git-dir)
@@ -45,4 +45,4 @@ if [ -f "$git_dir/MERGE_HEAD" ] && git -C "$toplevel" ls-files --unmerged | cut 
   exit 0
 fi
 
-pre_tool_deny "[SOP Violation] main 저장소에서 '$rel' 을(를) 직접 수정할 수 없습니다. 코드는 Agent 도구(isolation: \"worktree\")로 위임하거나 .worktrees/ 워크트리에서 수정하세요. (허용: document/todo.md, document/index.md, document/decision_log/*, document/adr/*, .env)"
+pre_tool_deny "[SOP Violation] main 저장소에서 '$rel' 을(를) 직접 수정할 수 없습니다. 코드는 Agent 도구(isolation: \"worktree\")로 위임하거나 .worktrees/ 워크트리에서 수정하세요. (허용 경로: .agents/main_allowlist)"

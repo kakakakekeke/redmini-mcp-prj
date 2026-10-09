@@ -1,8 +1,20 @@
 #!/bin/bash
-# Claude Code 훅 어댑터 검증 스위트. 메인 저장소/워크트리 어디서 실행해도 동작한다.
+# Claude Code 훅 어댑터 검증 스위트.
+# 실제 저장소를 건드리지 않도록 임시 복제 저장소(MAIN)와 그 워크트리(HERE)에서 실행한다.
 HOOKS="$(cd "$(dirname "$0")" && pwd -P)"
-HERE=$(git -C "$HOOKS" rev-parse --show-toplevel)
-MAIN=$(cd "$HERE" && cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
+SRC=$(git -C "$HOOKS" rev-parse --show-toplevel)
+REAL_MAIN=$(cd "$SRC" && cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
+SANDBOX=$(cd "$(mktemp -d)" && pwd -P)
+trap 'rm -rf "$SANDBOX"' EXIT
+MAIN="$SANDBOX/repo"
+git clone -q "$REAL_MAIN" "$MAIN"
+git -C "$MAIN" config user.email t@t; git -C "$MAIN" config user.name t
+rm -rf "$MAIN/.agents"; cp -R "$SRC/.agents" "$MAIN/.agents"   # 실행 중인 트리의 정책 파일 적용
+ln -s "$REAL_MAIN/node_modules" "$MAIN/node_modules"
+git -C "$MAIN" worktree add -q "$MAIN/.worktrees/self" -b test-self
+HERE="$MAIN/.worktrees/self"
+rm -rf "$HERE/.agents"; cp -R "$SRC/.agents" "$HERE/.agents"
+ln -s "$REAL_MAIN/node_modules" "$HERE/node_modules"
 export CLAUDE_PROJECT_DIR="$MAIN"
 PASS=0; FAIL=0
 
@@ -31,6 +43,10 @@ check "main: document/index.md 허용"       allow "$(edit "$MAIN/document/index
 check "main: decision_log 허용"            allow "$(edit "$MAIN/document/decision_log/DL-9999-x.md")"
 check "main: adr 허용"                     allow "$(edit "$MAIN/document/adr/9999-x.md")"
 check "main: .env 허용"                    allow "$(edit "$MAIN/.env")"
+check "main: document/sop 허용 (허용 경로 단일화)"  allow "$(edit "$MAIN/document/sop/vibe_tdd_sop.md")"
+check "main: document/templates 허용"         allow "$(edit "$MAIN/document/templates/x.md")"
+check "main: .husky 차단"                     deny  "$(edit "$MAIN/.husky/pre-commit")"
+check "main: .agents 정책 파일 차단"           deny  "$(edit "$MAIN/.agents/main_allowlist")"
 check "main: 경로 조작(../) 우회 차단"      deny  "$(edit "$MAIN/document/adr/../../src/index.ts")"
 check "프로젝트 외부 경로 허용"             allow "$(edit "/tmp/outside.md")"
 check "file_path 없음 허용"                 allow "$(echo '{"tool_input":{}}' | "$HOOKS/enforce_worktree.sh")"
@@ -46,6 +62,10 @@ check "main: 화이트리스트 내 심볼릭 링크 차단" deny "$(edit "$MAIN
 rm -f "$MAIN/document/adr/__probe_link.md"
 check "깨진 JSON 입력은 차단(fail-closed)"   deny2 "$(echo 'not json' | "$HOOKS/enforce_worktree.sh" 2>&1; echo "rc=$?")"
 check "jq 부재 시 차단(fail-closed)"         deny2 "$(edit_nojq "$MAIN/src/index.ts")"
+check "환경변수 MAIN_ALLOWLIST_FILE 로 정책 교체 불가" deny "$(echo '*' > "$SANDBOX/all"; jq -n --arg f "$MAIN/src/index.ts" '{tool_input:{file_path:$f}}' | MAIN_ALLOWLIST_FILE="$SANDBOX/all" "$HOOKS/enforce_worktree.sh")"
+mv "$MAIN/.agents/main_allowlist" "$SANDBOX/al.bak"
+check "정책 파일 없으면 차단 (fail-closed)"   deny  "$(edit "$MAIN/document/todo.md")"
+mv "$SANDBOX/al.bak" "$MAIN/.agents/main_allowlist"
 check "NotebookEdit notebook_path 검사"     deny  "$(jq -n --arg f "$MAIN/x.ipynb" '{tool_input:{notebook_path:$f}}' | "$HOOKS/enforce_worktree.sh")"
 
 echo "📂 enforce_subagent_isolation.sh"
@@ -59,6 +79,22 @@ check "main: security-code-reviewer 허용"     allow "$(agent "$MAIN" security-
 if [ "$HERE" != "$MAIN" ]; then
   check "worktree 세션: 격리 없이 허용"        allow "$(agent "$HERE" general-purpose "")"
 fi
+
+echo "📂 guard_bash.sh"
+bash_cmd() { jq -n --arg c "$1" --arg d "$2" '{cwd:$d,tool_name:"Bash",tool_input:{command:$c}}' | "$HOOKS/guard_bash.sh"; }
+check "--no-verify 차단"                      deny  "$(bash_cmd 'git commit --no-verify -m x' "$HERE")"
+check "HUSKY=0 차단"                          deny  "$(bash_cmd 'HUSKY=0 git commit -m x' "$HERE")"
+check "core.hooksPath 변경 차단"              deny  "$(bash_cmd 'git -c core.hooksPath=/dev/null commit -m x' "$HERE")"
+check "git config core.hooksPath 설정 차단"   deny  "$(bash_cmd 'git config core.hooksPath /tmp' "$HERE")"
+check "PRE_MERGE_COMMIT 위조 차단"            deny  "$(bash_cmd 'PRE_MERGE_COMMIT=1 git commit -m x' "$HERE")"
+check "main: cherry-pick 차단"               deny  "$(bash_cmd 'git cherry-pick abc123' "$MAIN")"
+check "main: revert 차단"                    deny  "$(bash_cmd 'cd x && git revert HEAD' "$MAIN")"
+check "main: git -C 로 main 지정 cherry-pick 차단" deny "$(bash_cmd "git -C $MAIN cherry-pick abc" "$HERE")"
+check "worktree: cherry-pick 허용"           allow "$(bash_cmd 'git cherry-pick abc123' "$HERE")"
+check "main: 일반 git 명령 허용"              allow "$(bash_cmd 'git status && git log --oneline -3' "$MAIN")"
+check "main: merge 허용"                     allow "$(bash_cmd 'git merge --no-ff feat/x' "$MAIN")"
+check "core.hooksPath 조회는 허용"            allow "$(bash_cmd 'git config --get core.hooksPath' "$MAIN")"
+check "Bash 깨진 JSON 차단"                   deny2 "$(echo 'oops' | "$HOOKS/guard_bash.sh" 2>&1; echo "rc=$?")"
 
 echo "📂 enforce_document_index.sh"
 check "정상 상태 통과"            allow "$(jq -n --arg c "$HERE" '{cwd:$c,hook_event_name:"Stop"}' | "$HOOKS/enforce_document_index.sh")"
@@ -76,7 +112,9 @@ if echo "$out" | grep -q 'additionalContext' && echo "$out" | grep -q 'TS2322'; 
 
 echo "📂 worktree_create.sh / worktree_remove.sh"
 name="hooktest-$$"
+mkdir -p "$MAIN/.husky/_" && touch "$MAIN/.husky/_/h" && git -C "$MAIN" config core.hooksPath .husky/_
 path=$(jq -n --arg n "$name" '{name:$n}' | "$HOOKS/worktree_create.sh" 2>/dev/null | tail -n 1)
+if [ "$(git -C "$MAIN" config core.hooksPath)" = "$MAIN/.husky/_" ]; then PASS=$((PASS+1)); echo "  ✅ 워크트리 생성 시 상대 hooksPath 를 절대 경로로 복구"; else FAIL=$((FAIL+1)); echo "  ❌ hooksPath 복구 실패: $(git -C "$MAIN" config core.hooksPath)"; fi
 if [ "$path" = "$MAIN/.worktrees/$name" ] && [ -d "$path" ] && [ "$(git -C "$path" symbolic-ref --short HEAD)" = "worktree-$name" ] && [ -L "$path/node_modules" ]; then
   PASS=$((PASS+1)); echo "  ✅ .worktrees/<name> 에 worktree-<name> 브랜치로 생성"
 else FAIL=$((FAIL+1)); echo "  ❌ 생성 실패: $path"; fi

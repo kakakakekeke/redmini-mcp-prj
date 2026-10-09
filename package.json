@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "prepare": "husky || true",
+    "prepare": "sh .agents/scripts/install_git_hooks.sh || true",
     "test": "vitest run"
   },
   "keywords": [],

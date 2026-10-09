@@ -2,6 +2,10 @@
 title: "DL-0008: 서브에이전트 기능 커밋 시 TO-DO 대기열 완료([x]) 동기화 의무화"
 created: 2026-09-20
 author: Antigravity
+updated: 2026-10-09
+status: superseded
+related:
+  - "[[DL-0028-agent-rules-hardening]]"
 tags:
   - decision-log
   - todo
@@ -10,6 +14,9 @@ tags:
 ---
 
 # DL-0008: 서브에이전트 기능 커밋 시 TO-DO 대기열 완료([x]) 동기화 의무화
+
+> [!warning] 대체됨 (Superseded by DL-0028)
+> 서브에이전트가 브랜치에서 todo.md를 수정하는 방식은 AGENTS.md 8장(사용자 승인)과 충돌하고 병렬 브랜치 간 병합 충돌을 일으켜 폐지되었습니다. 현재는 **메인 에이전트가 병합 직후 main에서 완료 처리**합니다. [[DL-0028-agent-rules-hardening]] 참고.
 
 > **안내 (ADR과의 구분 규칙)**: 
 > 본 결정 로그(Decision Log)는 코딩 컨벤션, 라이브러리 단순 교체, 워크플로우 조정, UI/UX 결정 등 **일상적이고 실무적인(Operational) 결정**을 빠르게 기록하고 추적하기 위한 용도입니다.
