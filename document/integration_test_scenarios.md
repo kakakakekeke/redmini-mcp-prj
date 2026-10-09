@@ -1,7 +1,7 @@
 ---
 title: "통합 테스트(E2E) 시나리오 및 결과서"
 created: 2026-09-19
-updated: 2026-09-21
+updated: 2026-10-09
 tags:
   - test
   - uat
@@ -81,7 +81,7 @@ related:
 *   **테스트 결과**: `[Pass] (Node.js/Express Mock Server와 MCP SDK Client를 이용한 E2E 자동화 스크립트로 검증 완료)`
 
 ### [TC-07] 다중 사용자 동시 접속 교차 격리 검증 (User A vs User B)
-*   **사전 조건**: 동일한 Streamable HTTP 서버 (:33333) 구동.
+*   **사전 조건**: 동일한 Streamable HTTP 서버 구동 (포트는 실행 시 OS가 할당한 빈 포트를 사용하고, `GET /health`가 200을 반환할 때까지 폴링한 뒤 접속 — `tests/e2e/server-process.ts`).
 *   **테스트 단계**:
     1. 클라이언트 A는 `x-redmine-api-key: Token_A`로 연결하여 `search_issues` 호출.
     2. 클라이언트 B는 `x-redmine-api-key: Token_B`로 연결하여 `search_issues` 호출.
