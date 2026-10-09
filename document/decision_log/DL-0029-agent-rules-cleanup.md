@@ -65,6 +65,6 @@ related:
 - [x] 검증: `test_git_policy.sh` 61건(frontmatter·CRLF·테스트 경고·커버리지 차단·무시 주석·미스테이징 설정·provider 누락 포함), `test_hook_suite.sh` 22건(본문 언급·특수문자·접두사 충돌·공백 파일명 포함)
 - [x] **병합 절차** (메인 세션): ① main에서 `npm install --no-save @vitest/coverage-v8@5.0.1` (병합 커밋의 `npm test`가 새 설정으로 실행되므로 선설치 필요) ② main에서 `document/todo.md` frontmatter 보완 커밋 ③ 병합 ④ `npm install`로 lock 동기화
 - [ ] 커버리지가 오르면 기준선 상향 (래칫) — 각 기능 작업의 5단계에서 수행
-- [ ] **E2E 고정 포트(33333)·고정 대기(2초)**: 연속·동시 `npm test`에서 간헐 실패(샌드박스 연속 커밋에서 관측). pre-commit·병합이 모두 `npm test`에 의존하게 되었으므로 후속 작업으로 처리 필요 (`PORT=0` + `/health` 폴링)
+- [x] **E2E 고정 포트(33333)·고정 대기(2초)**: 연속·동시 `npm test`에서 간헐 실패(샌드박스 연속 커밋에서 관측). → 브랜치 `fix/e2e-dynamic-port`에서 해결. `src/`를 바꾸지 않도록 `PORT=0` 대신 테스트 헬퍼(`tests/e2e/server-process.ts`)가 빈 포트를 미리 확보(free-port probe)해 전달하고, `/health` 200 폴링(시도당 10초)으로 준비를 확인하며, 준비 전 종료 시 새 포트로 최대 3회 재시도한다. npx 대신 `node --import tsx`로 직접 실행(cwd=저장소 루트)해 손자 프로세스 누수를 없애고 `afterAll`에서 종료를 대기한다.
 - [ ] 커버리지 기준선 여유가 작다(Functions 113/151 → 미테스트 함수 2개 추가 시 미달). 의도적으로 낮출 때는 DL로 남긴다.
 - [ ] (범위 밖) `[Impact-Reviewed]` 태그가 형식적 절차가 된 문제 — 자기 신고 태그 대신 R2 리뷰 수행 여부와 연동하는 방안 검토

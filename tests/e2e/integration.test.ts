@@ -6,7 +6,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import { startHttpServer, SpawnedServer } from "./server-process.js";
+import { startHttpServer, SpawnedServer, PROJECT_ROOT } from "./server-process.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -106,6 +106,8 @@ describe("Redmine MCP Server E2E Integration Tests", () => {
         // npx 를 거치지 않아 close 시 손자 프로세스가 남지 않는다
         command: process.execPath,
         args: ["--import", "tsx", SRC_INDEX],
+        // tsx 로더 해석이 vitest 호출 위치(cwd)에 좌우되지 않도록 저장소 루트에서 실행
+        cwd: PROJECT_ROOT,
         env: {
           ...process.env,
           TRANSPORT: "stdio",
@@ -238,7 +240,7 @@ describe("Redmine MCP Server E2E Integration Tests", () => {
       });
       client = new Client({ name: "test-client", version: "1.0.0" }, { capabilities: {} });
       await client.connect(transport);
-    }, 20000);
+    }, 45000); // 헬퍼 최악 소요(3회 × (10s 폴링 + 5s 종료)) + 연결
 
     afterAll(async () => {
       try {
