@@ -86,7 +86,7 @@ flowchart TD
 - R2 리뷰(deep·security) 지적사항: ReDoS(High), 비관리자 트래커 무시(M1), 적용 누락(M2), user·version 허용값(M3), 단일값 배열·불리언·5xx·트래커 미상·표시값 정제를 반영했다.
 
 ## 4. 후속 조치 (Action Items)
-- [ ] 메인 세션: 로컬 Redmine 픽스처(`MCP-TEST 고객사`/`요청번호`/`영향범위`)로 관리자·비관리자 키 라이브 검증
+- [x] 메인 세션: 로컬 Redmine 픽스처(`MCP-TEST 고객사`/`요청번호`/`영향범위`)로 관리자·비관리자 키 라이브 검증 — 12/12 통과 ([[DL-0034-live-api-coverage-verification]] §5-1)
 - [ ] 비관리자 키의 반복 403·대형 `/custom_fields.json` 반복 조회를 줄이기 위해 API 키 단위 짧은 TTL 캐시 검토
 - [ ] `update_issue` 는 PUT 이 204 라 적용 누락을 응답으로 확인할 수 없음 — 워크플로 읽기 전용 필드는 현재 탐지 불가 (재조회 비교 검토)
 - [ ] user·version 형식 필드의 이름 → ID 해석(Smart Name Resolution) 검토

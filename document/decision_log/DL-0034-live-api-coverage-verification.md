@@ -20,6 +20,7 @@ related:
   - "[[DL-0031-saved-queries]]"
   - "[[DL-0032-project-files]]"
   - "[[DL-0033-project-memberships-categories]]"
+  - "[[DL-0035-issue-custom-field-values]]"
   - "[[DL-0009-live-write-tools-verification]]"
   - "[[integration_test_scenarios]]"
 ---
@@ -136,6 +137,37 @@ sequenceDiagram
 | 조치 | 브랜치 `fix/project-files-404-message` (병합 `57f6f5a`) — `add` 경로 404 안내에 토큰 무효·만료 가능성과 `upload_attachment` 재발급 안내 포함, `list` 경로는 기존 메시지 유지. 버전 해석 과정에서 이미 확인된 사실(프로젝트 존재·버전 소유)은 추가 API 호출 없이 원인 목록에서 제외 |
 | 재검증 | B6 응답: `파일 등록 실패 (404 Not Found). 가능한 원인: (1) 업로드 토큰(token)이 유효하지 않거나 만료되었거나 이미 사용됨 → upload_attachment 로 다시 업로드해 새 토큰을 발급받으세요 / (2) 프로젝트를 찾을 수 없음: test-project` |
 | 미반영 (보안 리뷰 Low) | `project_id` 문자열의 줄바꿈·양방향 제어 문자가 오류 메시지에 그대로 들어갈 수 있음 — 기존 `toFriendlyError`부터 있던 문제로 별도 과제 후보 |
+
+---
+
+## 5-1. 추가 검증: 커스텀 필드 값 입력 (DL-0035, 병합 `2224fd1`)
+
+### 픽스처 (test-project 연결, 전 트래커)
+| ID | 이름 | 형식 |
+|:--|:--|:--|
+| 1 | `MCP-TEST 고객사` | list (A사/B사/C사) |
+| 2 | `MCP-TEST 요청번호` | string, regexp `^REQ-[0-9]+$` |
+| 3 | `MCP-TEST 영향범위` | list multiple (웹/모바일/API) |
+
+비관리자 검증은 `mcptest`(역할 개발자, add/edit_issues 권한) API 키로 수행. 픽스처는 `rails runner`로 생성(커스텀 필드 정의는 REST 생성 API 없음).
+
+| ID | 키 | 시나리오 | 결과 |
+|:--|:--|:--|:--|
+| D1 | 관리자 | 미리보기: 이름 키(대소문자 무시) `a사`→`A사`, `api`→`API` 표준화, 다중선택 배열, `custom_field_validation.performed=true` | ✅ |
+| D2 | 관리자 | 실제 생성 → 일감 #9 값 `{1:A사, 2:REQ-123, 3:[웹,API]}` REST 교차 확인 | ✅ |
+| D3 | 관리자 | 허용값 위반 `D사` → API 호출 전 차단, `custom_field_errors[].allowed_values` 안내 | ✅ |
+| D4 | 관리자 | 단일값 필드에 2개 배열 → 사전 차단 | ✅ |
+| D5 | 관리자 | regexp 위반 `ABC` → (regexp 미실행 정책) Redmine 422 `Mcp-test 요청번호 is invalid` 위임 | ✅ |
+| D6 | 관리자 | 없는 필드명 → 사용자 키만 포함한 안내 에러 | ✅ |
+| D7 | 관리자 | `update_issue` 숫자 ID 키 `{"1": "B사"}`만으로 수정 → 반영 | ✅ |
+| D8 | 관리자 | `update_issue` 빈 문자열로 값 비우기 → 반영 | ✅ |
+| D9 | 관리자 | `update_issue` `dry_run` 기본값 → 미변경 확인 | ✅ |
+| E1 | 비관리자 | 미리보기 → `/custom_fields.json` 403으로 사전 검증 생략(`performed=false`, 사유 표시) | ✅ |
+| E2 | 비관리자 | 허용값 위반 실제 호출 → Redmine 422 `Mcp-test 고객사 is not included in the list` 안내 | ✅ |
+| E3 | 비관리자 | `update_issue` 다중선택 값 `[모바일]` → 반영 | ✅ |
+
+> [!note] 관찰
+> Redmine 422 메시지는 필드명을 `humanize` 처리해 `Mcp-test 요청번호`처럼 대소문자가 바뀌어 표시된다(Redmine 동작, 기능 영향 없음).
 
 ---
 
