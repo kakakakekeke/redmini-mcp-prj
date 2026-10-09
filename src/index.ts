@@ -77,21 +77,23 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
 
   server.tool(
     "update_issue",
-    "일감의 상태나 내용을 업데이트합니다. (dry_run 지원)",
+    "일감의 상태·댓글·커스텀 필드 값을 업데이트합니다. (dry_run 지원, 기본값: true) custom_fields 는 {\"필드 이름 또는 숫자 ID\": 값} 형식이며 다중 선택 필드는 문자열 배열을 넘깁니다. 관리자 키면 목록 허용값·다중 선택·트래커 활성 여부를 사전 검증하고(형식 regexp 는 Redmine 이 검증), 아니면 Redmine 422 응답으로 검증됩니다.",
     updateIssueSchema.shape,
     async (args) => {
       const result = await updateIssueHandler(args as any, client);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      // 미리보기·검증 오류에 Redmine 데이터(필드 이름·허용값)가 포함되므로 주입 탐지를 거친다 (DL-0035)
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
 
   server.tool(
     "create_issue",
-    "새 일감을 생성합니다. 기본값이 true인 dry_run 파라미터를 통해 안전한 미리보기를 제공합니다. 실제 생성을 원할 경우에만 명시적으로 false로 전달하세요.",
+    "새 일감을 생성합니다. 기본값이 true인 dry_run 파라미터를 통해 안전한 미리보기를 제공합니다. 실제 생성을 원할 경우에만 명시적으로 false로 전달하세요. custom_fields 는 {\"필드 이름 또는 숫자 ID\": 값} 형식(다중 선택은 문자열 배열)이며, 미리보기에 해석된 필드 ID·이름과 사전 검증 수행 여부(custom_field_validation)가 표시됩니다.",
     createIssueSchema.shape,
     async (args) => {
       const result = await createIssueHandler(args as any, client);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      // 미리보기·검증 오류에 Redmine 데이터(필드 이름·허용값)가 포함되므로 주입 탐지를 거친다 (DL-0035)
+      return { content: [{ type: "text", text: JSON.stringify(processToolResult(result), null, 2) }] };
     }
   );
 

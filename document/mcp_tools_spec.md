@@ -130,6 +130,18 @@ LLM(Claude/Cursor)이 불필요하게 많은 도구를 가지지 않도록(Tool 
     *   `version_id` (integer, optional) 또는 `version` (string, optional): 연결할 버전. 이름은 프로젝트 버전 목록에서 대소문자 무시로 매핑하며 둘을 동시에 줄 수 없습니다.
     *   `dry_run` (boolean, default: `true`): `add` 의 미리보기. 실제 등록은 `false` 로 재호출.
 
+### 3.5. `create_issue` / `update_issue` 커스텀 필드 값 (쓰기, [[DL-0035-issue-custom-field-values|DL-0035]])
+일감 생성·수정 시 커스텀 필드 값을 넣습니다. 두 도구 모두 `dry_run` 기본값 `true` 입니다.
+
+*   **Parameters (공통 추가):**
+    *   `custom_fields` (object, optional): `{ "필드 이름 또는 숫자 ID": 값 }`. 값은 string | number | boolean(1/0) | 배열(다중 선택). 빈 문자열/빈 배열은 값 비우기. 사용자·버전 형식 필드는 숫자 ID. 키 1~255자·최대 50개, 문자열 ≤65,535자, 배열 ≤100개 × 1,024자.
+        *   이름은 프로젝트의 `issue_custom_fields`(`get_projects` + `project_id` 로 확인) 기준으로 대소문자·공백 무시 매핑. 숫자 키는 ID 이며 해당 프로젝트에서 사용 가능한 필드여야 합니다. 모호·미존재·중복은 에러.
+        *   관리자 키: `GET /custom_fields.json` 으로 목록 허용값(list·enumeration·bool, 대소문자 차이·라벨은 표준 값으로 치환), 다중 선택 여부, 트래커 활성 여부를 사전 검증. 실패 시 `{ error, custom_field_errors[{id,name,value,problem,allowed_values?}] }` 반환(API 미호출). regexp 는 ReDoS 방지를 위해 실행하지 않고 `skipped_checks` 에 패턴만 안내.
+        *   비관리자 키(또는 정의 조회 실패): 사전 검증 생략, Redmine 422 메시지로 검증.
+        *   `update_issue` 는 일감 상세의 `custom_fields` 에 없는 필드를 관리자 여부와 무관하게 오류로 반환. `create_issue` 는 응답에 반영되지 않은 필드를 `custom_fields_not_applied` 로 경고.
+    *   미리보기에 `custom_fields: [{id, name, value}]` 와 `custom_field_validation: {performed, reason?, skipped_checks?}` 표시. 실제 페이로드는 `custom_fields: [{id, value}]`.
+*   **`update_issue` 참고:** 파라미터는 `issue_id`, `status_id`, `notes`, `custom_fields`, `dry_run`. `custom_fields` 만 있어도 유효한 업데이트이며, 프로젝트·트래커는 일감 상세에서 얻습니다(상태 검증과 1회 조회 공유).
+
 ---
 
 ## 4. 향후 확장 계획

@@ -29,7 +29,7 @@ export function cleanExternalText(text: string): string {
 }
 
 /** 대소문자·앞뒤 공백·유니코드 정규화(NFC/NFD)·보이지 않는 문자 차이를 무시하는 비교 키 */
-function normalizeName(name: string): string {
+export function normalizeName(name: string): string {
   return cleanExternalText(name.normalize("NFC")).toLowerCase();
 }
 

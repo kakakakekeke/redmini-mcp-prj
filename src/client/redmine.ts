@@ -246,7 +246,7 @@ export class RedmineClient {
     const queryParams: Record<string, any> = {
       include: params?.include !== undefined ? params.include : defaultInclude,
     };
-    const encodedId = encodeURIComponent(String(projectId).trim());
+    const encodedId = encodeProjectSegment(projectId);
     try {
       const { data } = await this.api.get(`/projects/${encodedId}.json`, { params: queryParams });
       return data;
@@ -287,6 +287,15 @@ export class RedmineClient {
   async getIssueCategories(projectId: string | number) {
     const encodedId = encodeProjectSegment(projectId);
     const { data } = await this.api.get(`/projects/${encodedId}/issue_categories.json`);
+    return data;
+  }
+
+  /**
+   * 전체 커스텀 필드 정의 조회 (GET /custom_fields.json). Redmine 관리자 전용이며 비관리자는 403 을 받는다.
+   * 오류는 호출자에게 그대로 전파한다 (호출자가 403 을 graceful degradation 으로 처리). DL-0035
+   */
+  async getCustomFields() {
+    const { data } = await this.api.get('/custom_fields.json');
     return data;
   }
 
