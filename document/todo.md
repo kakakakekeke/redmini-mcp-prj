@@ -29,7 +29,8 @@ related:
 * (현재 등록된 모든 P2 작업이 완료되었습니다.)
 
 ### 🧩 기능 확장 — Redmine API 커버리지
-* (현재 등록된 모든 기능 확장 작업이 완료되었습니다.)
+- [ ] 아키텍처 및 라이브러리 도입 관련 DL/ADR 작성 여부 판단 — 기존 도구 파라미터 확장 우선, 결정 사항은 DL로 기록
+- [ ] `feat/issue-custom-field-values` : `create_issue`·`update_issue`에 커스텀 필드 값 입력(`custom_fields`, 필드 이름 → ID 자동 변환, 목록형 허용값 사전 검증·`dry_run` 미리보기 반영) — [[DL-0025-project-custom-fields-support]]
 
 ### 📌 P3 — 중기 조치 (보안 감사 기반, 1개월)
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
