@@ -1007,6 +1007,35 @@ it("should normalize 204 No Content or empty data to success message on update",
       expect(mockGet).toHaveBeenCalledWith("/projects/a%2Fb/issue_categories.json");
     });
   });
+
+  describe("getCustomFields (DL-0035)", () => {
+    it("should call GET /custom_fields.json and return data", async () => {
+      const payload = { custom_fields: [{ id: 1, name: "고객사", field_format: "list" }] };
+      const mockGet = vi.fn().mockResolvedValue({ data: payload });
+      (client as any).api = { get: mockGet };
+
+      const data = await client.getCustomFields();
+      expect(mockGet).toHaveBeenCalledWith("/custom_fields.json");
+      expect(data).toEqual(payload);
+    });
+
+    it("should propagate 403 errors (non-admin) to the caller", async () => {
+      const err = Object.assign(new Error("Forbidden"), { response: { status: 403 } });
+      (client as any).api = { get: vi.fn().mockRejectedValue(err) };
+      await expect(client.getCustomFields()).rejects.toBe(err);
+    });
+  });
+
+  describe("getProject dot-segment guard (DL-0035)", () => {
+    it("should reject '.', '..' and blank project ids", async () => {
+      const mockGet = vi.fn();
+      (client as any).api = { get: mockGet };
+      await expect(client.getProject("..")).rejects.toThrow("Invalid project id");
+      await expect(client.getProject(".")).rejects.toThrow("Invalid project id");
+      await expect(client.getProject("  ")).rejects.toThrow("Invalid project id");
+      expect(mockGet).not.toHaveBeenCalled();
+    });
+  });
 });
 
 describe("RedmineClient saved queries (GET /queries.json)", () => {

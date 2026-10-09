@@ -1,4 +1,5 @@
 import { logger } from "./logger.js";
+import { cleanExternalText } from "../client/resolver.js";
 
 export const PROMPT_INJECTION_PATTERNS: RegExp[] = [
   /\[SYSTEM\]/i,
@@ -23,8 +24,10 @@ export function detectPromptInjection(data: any): PromptInjectionDetectionResult
     if (val === null || val === undefined) return;
 
     if (typeof val === "string") {
+      // 보이지 않는 서식 문자로 쪼갠 패턴(I\u200BGNORE)도 잡도록 정제한 사본도 검사한다 (DL-0035)
+      const cleaned = cleanExternalText(val);
       for (const pattern of PROMPT_INJECTION_PATTERNS) {
-        if (pattern.test(val)) {
+        if (pattern.test(val) || (cleaned !== val && pattern.test(cleaned))) {
           matchedPatterns.add(pattern.source);
         }
       }

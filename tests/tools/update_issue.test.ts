@@ -183,4 +183,93 @@ describe("updateIssueHandler", () => {
       updates: { notes: "Default dry_run test" },
     });
   });
+  describe("custom_fields (DL-0035)", () => {
+    const projectFields = {
+      project: { id: 7, issue_custom_fields: [{ id: 1, name: "MCP-TEST 고객사" }, { id: 2, name: "MCP-TEST 요청번호" }] },
+    };
+    const defs = {
+      custom_fields: [
+        { id: 1, customized_type: "issue", field_format: "list", possible_values: [{ value: "A사" }], trackers: [{ id: 1 }] },
+        { id: 2, customized_type: "issue", field_format: "string", regexp: "^REQ-[0-9]+$" },
+      ],
+    };
+    const issue = {
+      issue: { id: 5, project: { id: 7, name: "P" }, tracker: { id: 1, name: "결함" }, status: { id: 1 }, allowed_statuses: [{ id: 2 }] },
+    };
+    const forbidden = Object.assign(new Error("403"), { response: { status: 403 } });
+
+    beforeEach(() => {
+      mockClient.getIssueDetails.mockResolvedValue(issue);
+      mockClient.getProject = vi.fn().mockResolvedValue(projectFields);
+      mockClient.getCustomFields = vi.fn().mockResolvedValue(defs);
+    });
+
+    it("should accept custom_fields alone as a valid update and show a dry_run preview", async () => {
+      const args = updateIssueSchema.parse({ issue_id: 5, custom_fields: { "mcp-test 요청번호": "REQ-1" } });
+      const result: any = await updateIssueHandler(args, mockClient);
+      expect(mockClient.getIssueDetails).toHaveBeenCalledTimes(1);
+      expect(mockClient.getProject).toHaveBeenCalledWith(7, { include: "issue_custom_fields" });
+      expect(mockClient.updateIssue).not.toHaveBeenCalled();
+      expect(result.updates).toEqual({ custom_fields: [{ id: 2, value: "REQ-1" }] });
+      expect(result.custom_fields).toEqual([{ id: 2, name: "MCP-TEST 요청번호", value: "REQ-1" }]);
+      expect(result.custom_field_validation.performed).toBe(true);
+    });
+
+    it("should reuse a single issue lookup for status validation and custom fields", async () => {
+      const args = updateIssueSchema.parse({ issue_id: 5, status_id: 2, custom_fields: { "1": "A사" }, dry_run: false });
+      await updateIssueHandler(args, mockClient);
+      expect(mockClient.getIssueDetails).toHaveBeenCalledTimes(1);
+      expect(mockClient.updateIssue).toHaveBeenCalledWith(5, { status_id: 2, custom_fields: [{ id: 1, value: "A사" }] });
+    });
+
+    it("should return validation errors without updating when admin checks fail", async () => {
+      const args = updateIssueSchema.parse({ issue_id: 5, custom_fields: { "1": "Z사" }, dry_run: false });
+      const result: any = await updateIssueHandler(args, mockClient);
+      expect(mockClient.updateIssue).not.toHaveBeenCalled();
+      expect(result.error).toMatch(/not updated/);
+      expect(result.custom_field_errors[0]).toEqual(expect.objectContaining({ id: 1, allowed_values: ["A사"] }));
+    });
+
+    it("should use the issue's tracker for tracker enablement checks", async () => {
+      mockClient.getIssueDetails.mockResolvedValue({ issue: { ...issue.issue, tracker: { id: 9 } } });
+      const result: any = await updateIssueHandler(updateIssueSchema.parse({ issue_id: 5, custom_fields: { "1": "A사" } }), mockClient);
+      expect(result.custom_field_errors[0].problem).toMatch(/tracker id 9/);
+    });
+
+    it("should skip pre-validation for non-admin keys and surface Redmine 422 messages", async () => {
+      mockClient.getCustomFields = vi.fn().mockRejectedValue(forbidden);
+      mockClient.updateIssue.mockRejectedValue({
+        isAxiosError: true,
+        response: { status: 422, data: { errors: ["MCP-TEST 요청번호 is invalid"] } },
+      });
+      const preview: any = await updateIssueHandler(updateIssueSchema.parse({ issue_id: 5, custom_fields: { "2": "123" } }), mockClient);
+      expect(preview.custom_field_validation.performed).toBe(false);
+      await expect(
+        updateIssueHandler(updateIssueSchema.parse({ issue_id: 5, custom_fields: { "2": "123" }, dry_run: false }), mockClient)
+      ).rejects.toThrow("MCP-TEST 요청번호 is invalid");
+    });
+
+    it("should throw when the issue's project cannot be determined", async () => {
+      mockClient.getIssueDetails.mockResolvedValue({ issue: { id: 5 } });
+      await expect(
+        updateIssueHandler(updateIssueSchema.parse({ issue_id: 5, custom_fields: { "1": "A사" } }), mockClient)
+      ).rejects.toThrow(/Cannot determine the project of issue 5/);
+      expect(mockClient.getProject).not.toHaveBeenCalled();
+    });
+
+    it("should reject fields that the issue does not expose even for non-admin keys (review M1)", async () => {
+      mockClient.getCustomFields = vi.fn().mockRejectedValue(forbidden);
+      mockClient.getIssueDetails.mockResolvedValue({ issue: { ...issue.issue, custom_fields: [{ id: 2, name: "x", value: "" }] } });
+      const result: any = await updateIssueHandler(
+        updateIssueSchema.parse({ issue_id: 5, custom_fields: { "1": "A사" }, dry_run: false }),
+        mockClient
+      );
+      expect(mockClient.updateIssue).not.toHaveBeenCalled();
+      expect(result.custom_field_errors[0].problem).toMatch(/not available on this issue/);
+    });
+
+    it("should reject an empty custom_fields object in the schema", () => {
+      expect(() => updateIssueSchema.parse({ issue_id: 5, custom_fields: {} })).toThrow();
+    });
+  });
 });

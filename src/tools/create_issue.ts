@@ -2,6 +2,11 @@ import { z } from "zod";
 import { RedmineClient } from "../client/redmine.js";
 import { SmartNameResolver } from "../client/resolver.js";
 import { projectIdentifierStringSchema } from "./get_projects.js";
+import {
+  customFieldsInputSchema,
+  formatRedmineValidationError,
+  resolveIssueCustomFields,
+} from "../utils/issue_custom_fields.js";
 
 export const createIssueSchema = z.object({
   project_id: projectIdentifierStringSchema.describe("프로젝트 식별자(ID 또는 슬러그 identifier)"),
@@ -23,6 +28,7 @@ export const createIssueSchema = z.object({
     .optional()
     .describe("일감 범주 이름 (예: 'UI'). 해당 프로젝트의 범주 목록에서 category_id 로 자동 변환 (get_projects include=['issue_categories'] 로 확인)"),
   category_id: z.number().int().positive().optional().describe("일감 범주 숫자 ID (category 보다 우선)"),
+  custom_fields: customFieldsInputSchema.optional(),
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid due_date").optional().describe("만료일 (YYYY-MM-DD)"),
   estimated_hours: z.number().positive().optional().describe("추정 시간"),
   uploads: z
@@ -108,6 +114,19 @@ export async function createIssueHandler(args: CreateIssueArgs, client: RedmineC
     category_id = await resolveCategoryId(client, args.project_id, args.category);
   }
 
+  // 커스텀 필드: 프로젝트 필드 목록으로 이름 → ID 해석, 관리자 키면 값 사전 검증 (DL-0035)
+  const customFields = args.custom_fields
+    ? await resolveIssueCustomFields(client, args.project_id, args.custom_fields, { trackerId: tracker_id })
+    : undefined;
+  if (customFields && customFields.errors.length > 0) {
+    return {
+      error: "Custom field values are invalid. Issue was not created.",
+      dry_run: args.dry_run,
+      custom_field_errors: customFields.errors,
+      custom_field_validation: customFields.validation,
+    };
+  }
+
   const payload: any = {
     project_id: args.project_id,
     subject: args.subject,
@@ -121,14 +140,38 @@ export async function createIssueHandler(args: CreateIssueArgs, client: RedmineC
   if (args.due_date !== undefined) payload.due_date = args.due_date;
   if (args.estimated_hours !== undefined) payload.estimated_hours = args.estimated_hours;
   if (args.uploads !== undefined) payload.uploads = args.uploads;
+  if (customFields) payload.custom_fields = customFields.payload;
 
   if (args.dry_run) {
     return {
       message: "[DRY_RUN 미리보기] dry_run is true. Issue will not be created. Please ask user to confirm.",
       dry_run: true,
-      payload: { issue: payload }
+      payload: { issue: payload },
+      ...(customFields ? { custom_fields: customFields.fields, custom_field_validation: customFields.validation } : {}),
     };
   }
 
-  return await client.createIssue({ issue: payload });
+  let created: any;
+  try {
+    created = await client.createIssue({ issue: payload });
+  } catch (error: any) {
+    const message = formatRedmineValidationError(error);
+    if (message !== undefined) throw new Error(message);
+    throw error;
+  }
+
+  // Redmine 은 트래커·권한상 적용되지 않는 필드 값을 오류 없이 버린다. 응답에 없는 필드를 알려 준다. (DL-0035)
+  const returned = created?.issue?.custom_fields;
+  if (customFields && Array.isArray(returned)) {
+    const returnedIds = new Set(returned.map((f: any) => f?.id));
+    const notApplied = customFields.payload.map((f) => f.id).filter((id) => !returnedIds.has(id));
+    if (notApplied.length > 0) {
+      return {
+        ...created,
+        custom_fields_not_applied: notApplied,
+        warning: "Some custom field values were not applied by Redmine (field not enabled for the tracker, not visible or not editable).",
+      };
+    }
+  }
+  return created;
 }

@@ -243,5 +243,160 @@ describe('create_issue tool', () => {
         expect(() => createIssueSchema.parse({ project_id: '1', subject: 'T', category: 'a'.repeat(256) })).toThrow();
       });
     });
+    describe('custom_fields (DL-0035)', () => {
+    const projectFields = {
+      project: { id: 1, issue_custom_fields: [{ id: 1, name: 'MCP-TEST 고객사' }, { id: 3, name: 'MCP-TEST 영향범위' }] },
+    };
+    const defs = {
+      custom_fields: [
+        { id: 1, customized_type: 'issue', field_format: 'list', multiple: false,
+          possible_values: [{ value: 'A사' }, { value: 'B사' }], trackers: [{ id: 1 }, { id: 2 }] },
+        { id: 3, customized_type: 'issue', field_format: 'list', multiple: true,
+          possible_values: [{ value: '웹' }, { value: 'API' }] },
+      ],
+    };
+    const forbidden = Object.assign(new Error('403'), { response: { status: 403 } });
+    const client = (over: any = {}) => ({
+      createIssue: vi.fn().mockResolvedValue({ issue: { id: 300 } }),
+      getProjects: vi.fn().mockResolvedValue({ projects: [] }),
+      getTrackers: vi.fn().mockResolvedValue({ trackers: [{ id: 3, name: '지원' }] }),
+      getStatuses: vi.fn().mockResolvedValue({ issue_statuses: [] }),
+      getPriorities: vi.fn().mockResolvedValue({ issue_priorities: [] }),
+      getUsers: vi.fn().mockResolvedValue({ users: [] }),
+      getProject: vi.fn().mockResolvedValue(projectFields),
+      getCustomFields: vi.fn().mockResolvedValue(defs),
+      ...over,
+    });
+
+    it('should accept custom_fields in schema and keep dry_run default true', () => {
+      const parsed = createIssueSchema.parse({ project_id: '1', subject: 'T', custom_fields: { '고객사': 'A사', '3': ['웹'] } });
+      expect(parsed.dry_run).toBe(true);
+      expect(() => createIssueSchema.parse({ project_id: '1', subject: 'T', custom_fields: {} })).toThrow();
+    });
+
+    it('should not call custom field APIs when custom_fields is omitted', async () => {
+      const c = client();
+      await createIssueHandler(createIssueSchema.parse({ project_id: '1', subject: 'T' }), c as any);
+      expect(c.getProject).not.toHaveBeenCalled();
+      expect(c.getCustomFields).not.toHaveBeenCalled();
+    });
+
+    it('should show resolved custom_fields and validation status in dry_run preview without calling API', async () => {
+      const c = client();
+      const result: any = await createIssueHandler(
+        createIssueSchema.parse({ project_id: 'test-project', subject: 'T', custom_fields: { 'mcp-test 고객사': 'A사', '3': ['웹', 'api'] } }),
+        c as any
+      );
+      expect(c.createIssue).not.toHaveBeenCalled();
+      expect(c.getProject).toHaveBeenCalledWith('test-project', { include: 'issue_custom_fields' });
+      expect(result.dry_run).toBe(true);
+      expect(result.payload.issue.custom_fields).toEqual([{ id: 3, value: ['웹', 'API'] }, { id: 1, value: 'A사' }]);
+      expect(result.custom_fields).toEqual([
+        { id: 3, name: 'MCP-TEST 영향범위', value: ['웹', 'API'] },
+        { id: 1, name: 'MCP-TEST 고객사', value: 'A사' },
+      ]);
+      expect(result.custom_field_validation).toEqual(expect.objectContaining({ performed: true }));
+    });
+
+    it('should send custom_fields [{id, value}] to Redmine when dry_run=false', async () => {
+      const c = client();
+      await createIssueHandler(
+        createIssueSchema.parse({ project_id: '1', subject: 'T', custom_fields: { '1': 'B사' }, dry_run: false }),
+        c as any
+      );
+      expect(c.createIssue).toHaveBeenCalledWith({
+        issue: expect.objectContaining({ custom_fields: [{ id: 1, value: 'B사' }] }),
+      });
+    });
+
+    it('should return validation errors and not create the issue when an admin check fails', async () => {
+      const c = client();
+      const result: any = await createIssueHandler(
+        createIssueSchema.parse({ project_id: '1', subject: 'T', custom_fields: { '1': 'Z사' }, dry_run: false }),
+        c as any
+      );
+      expect(c.createIssue).not.toHaveBeenCalled();
+      expect(result.error).toMatch(/not created/);
+      expect(result.custom_field_errors[0]).toEqual(expect.objectContaining({ id: 1, allowed_values: ['A사', 'B사'] }));
+    });
+
+    it('should check tracker enablement using the resolved tracker id', async () => {
+      const c = client();
+      const result: any = await createIssueHandler(
+        createIssueSchema.parse({ project_id: '1', subject: 'T', tracker: '지원', custom_fields: { '1': 'A사' } }),
+        c as any
+      );
+      expect(result.custom_field_errors[0].problem).toMatch(/tracker id 3/);
+    });
+
+    it('should skip pre-validation for non-admin keys and delegate to Redmine', async () => {
+      const c = client({ getCustomFields: vi.fn().mockRejectedValue(forbidden) });
+      const preview: any = await createIssueHandler(
+        createIssueSchema.parse({ project_id: '1', subject: 'T', custom_fields: { '1': 'Z사' } }),
+        c as any
+      );
+      expect(preview.custom_field_validation.performed).toBe(false);
+      expect(preview.payload.issue.custom_fields).toEqual([{ id: 1, value: 'Z사' }]);
+
+      const err422 = { isAxiosError: true, response: { status: 422, data: { errors: ['MCP-TEST 고객사 is not included in the list'] } } };
+      const c2 = client({ getCustomFields: vi.fn().mockRejectedValue(forbidden), createIssue: vi.fn().mockRejectedValue(err422) });
+      await expect(
+        createIssueHandler(
+          createIssueSchema.parse({ project_id: '1', subject: 'T', custom_fields: { '1': 'Z사' }, dry_run: false }),
+          c2 as any
+        )
+      ).rejects.toThrow('MCP-TEST 고객사 is not included in the list');
+    });
+
+    it('should warn when Redmine silently drops custom field values on create (review M2)', async () => {
+      const c = client({
+        createIssue: vi.fn().mockResolvedValue({ issue: { id: 301, custom_fields: [{ id: 3, value: ['웹'] }] } }),
+      });
+      const result: any = await createIssueHandler(
+        createIssueSchema.parse({ project_id: '1', subject: 'T', tracker: '지원', custom_fields: { '3': ['웹'], '1': 'A사' }, dry_run: false }),
+        c as any
+      );
+      // tracker 3 은 필드 1 의 trackers 에 없으므로 사전 검증에서 막힘 → 다른 시나리오로 확인
+      expect(result.custom_field_errors).toBeDefined();
+
+      const c2 = client({
+        getCustomFields: vi.fn().mockRejectedValue(forbidden),
+        createIssue: vi.fn().mockResolvedValue({ issue: { id: 302, custom_fields: [{ id: 3, value: ['웹'] }] } }),
+      });
+      const created: any = await createIssueHandler(
+        createIssueSchema.parse({ project_id: '1', subject: 'T', custom_fields: { '3': ['웹'], '1': 'A사' }, dry_run: false }),
+        c2 as any
+      );
+      expect(created.issue.id).toBe(302);
+      expect(created.custom_fields_not_applied).toEqual([1]);
+      expect(created.warning).toMatch(/not applied/);
+
+      const c3 = client({
+        getCustomFields: vi.fn().mockRejectedValue(forbidden),
+        createIssue: vi.fn().mockResolvedValue({ issue: { id: 303 } }),
+      });
+      const noInfo: any = await createIssueHandler(
+        createIssueSchema.parse({ project_id: '1', subject: 'T', custom_fields: { '1': 'A사' }, dry_run: false }),
+        c3 as any
+      );
+      expect(noInfo).toEqual({ issue: { id: 303 } });
+    });
+
+    it('should rethrow non-422 errors from createIssue unchanged', async () => {
+      const boom = new Error('Network Error');
+      const c = client({ createIssue: vi.fn().mockRejectedValue(boom) });
+      await expect(
+        createIssueHandler(createIssueSchema.parse({ project_id: '1', subject: 'T', dry_run: false }), c as any)
+      ).rejects.toBe(boom);
+    });
+
+    it('should propagate name resolution errors', async () => {
+      const c = client();
+      await expect(
+        createIssueHandler(createIssueSchema.parse({ project_id: '1', subject: 'T', custom_fields: { '없는필드': 'x' } }), c as any)
+      ).rejects.toThrow(/Invalid custom field name/);
+      expect(c.createIssue).not.toHaveBeenCalled();
+    });
   });
+});
 });
