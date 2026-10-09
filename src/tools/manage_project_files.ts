@@ -97,12 +97,15 @@ async function toNumericProjectId(projectId: string | number, client: RedmineCli
   return typeof id === "number" ? id : undefined;
 }
 
+type ResolvedVersion = { id: number; ownershipVerified: boolean };
+
 // Redmine 데이터(버전 이름)를 담는 결과는 예외가 아닌 객체로 반환해 processToolResult(인젝션 탐지)를 거치게 한다.
+// ownershipVerified: 숫자 project id 를 확인해 "이 프로젝트 소유 버전" 으로 걸러낸 결과인지 여부.
 async function resolveVersionId(
   versionName: string,
   projectId: string | number,
   client: RedmineClient
-): Promise<number | ErrorResult> {
+): Promise<ResolvedVersion | ErrorResult> {
   const data = await client.getProjectVersions(projectId);
   const versions: any[] = Array.isArray(data?.versions) ? data.versions : [];
   const numericProjectId = await toNumericProjectId(projectId, client);
@@ -128,7 +131,7 @@ async function resolveVersionId(
       error: `Version name '${versionName}' is ambiguous (ids: ${matches.map((v) => v.id).join(", ")}). Please specify version_id.`,
     };
   }
-  return matches[0].id;
+  return { id: matches[0].id, ownershipVerified: numericProjectId !== undefined };
 }
 
 function maskToken(token: string): string {
@@ -136,14 +139,10 @@ function maskToken(token: string): string {
   return `${id}.${digest.slice(0, 4)}…`;
 }
 
-function toFriendlyError(error: any, projectId: string | number, versionSpecified = false): ErrorResult | undefined {
+function toFriendlyError(error: any, projectId: string | number): ErrorResult | undefined {
   const status = error?.response?.status;
   if (status === 404) {
-    return {
-      error: versionSpecified
-        ? `프로젝트 또는 버전을 찾을 수 없습니다: ${projectId} (버전이 이 프로젝트 소유가 아닐 수 있습니다)`
-        : `해당 프로젝트를 찾을 수 없습니다: ${projectId}`,
-    };
+    return { error: `해당 프로젝트를 찾을 수 없습니다: ${projectId}` };
   }
   if (status === 403) {
     return {
@@ -151,6 +150,27 @@ function toFriendlyError(error: any, projectId: string | number, versionSpecifie
     };
   }
   return undefined;
+}
+
+// Redmine FilesController 는 무효·만료된 업로드 토큰도 404(빈 본문)로 응답하므로(라이브 검증),
+// add 의 404 를 "프로젝트 없음" 으로 단정하지 않고 가능한 원인을 함께 안내한다. 토큰 원문은 넣지 않는다.
+function addNotFoundError(
+  projectId: string | number,
+  opts: { projectConfirmed: boolean; versionUnverified: boolean }
+): ErrorResult {
+  const causes = [
+    "업로드 토큰(token)이 유효하지 않거나 만료되었거나 이미 사용됨 → upload_attachment 로 다시 업로드해 새 토큰을 발급받으세요",
+  ];
+  if (!opts.projectConfirmed) {
+    causes.push(`프로젝트를 찾을 수 없음: ${projectId}`);
+  }
+  if (opts.versionUnverified) {
+    causes.push("지정한 버전이 없거나 이 프로젝트 소유가 아님 (공유 버전은 연결 불가)");
+  }
+  const header = opts.projectConfirmed
+    ? `파일 등록 실패 (404 Not Found, 프로젝트 ${projectId} 는 확인됨). 가능한 원인: `
+    : "파일 등록 실패 (404 Not Found). 가능한 원인: ";
+  return { error: header + causes.map((c, i) => `(${i + 1}) ${c}`).join(" / ") };
 }
 
 export async function manageProjectFilesHandler(args: ManageProjectFilesArgs, client: RedmineClient) {
@@ -178,10 +198,13 @@ export async function manageProjectFilesHandler(args: ManageProjectFilesArgs, cl
     const file: AddProjectFileData = { token: args.token };
     if (args.filename !== undefined) file.filename = args.filename;
     if (args.description !== undefined) file.description = args.description;
+    // add 의 404 원인 안내용: 버전 이름 해석(getProjectVersions 성공)으로 이미 확인된 사실 (추가 API 호출 없음)
+    let projectConfirmed = false;
+    let versionOwnershipVerified = false;
     if (args.version_id !== undefined) {
       file.version_id = args.version_id;
     } else if (args.version !== undefined) {
-      let resolved: number | ErrorResult;
+      let resolved: ResolvedVersion | ErrorResult;
       try {
         resolved = await resolveVersionId(args.version, projectId, client);
       } catch (error: any) {
@@ -190,7 +213,9 @@ export async function manageProjectFilesHandler(args: ManageProjectFilesArgs, cl
         throw error;
       }
       if (isErrorResult(resolved)) return resolved;
-      file.version_id = resolved;
+      file.version_id = resolved.id;
+      projectConfirmed = true;
+      versionOwnershipVerified = resolved.ownershipVerified;
     }
 
     if (args.dry_run !== false) {
@@ -214,13 +239,20 @@ export async function manageProjectFilesHandler(args: ManageProjectFilesArgs, cl
       if (status === 422 && Array.isArray(error.response?.data?.errors)) {
         return { error: `파일 등록 실패 (422): ${error.response.data.errors.join(", ")}` };
       }
+      // 방어 코드: 라이브 실측상 무효·만료 토큰은 404 로 오며(addNotFoundError), 400 은 버전·플러그인 차이 대비용
       if (status === 400) {
         return {
           error:
             "파일 등록 실패 (400 Bad Request): 업로드 토큰(token)이 유효하지 않거나 만료되었을 수 있습니다. upload_attachment 로 다시 업로드하세요.",
         };
       }
-      const friendly = toFriendlyError(error, args.project_id, file.version_id !== undefined);
+      if (status === 404) {
+        return addNotFoundError(args.project_id, {
+          projectConfirmed,
+          versionUnverified: file.version_id !== undefined && !versionOwnershipVerified,
+        });
+      }
+      const friendly = toFriendlyError(error, args.project_id);
       if (friendly) return friendly;
       throw error;
     }
