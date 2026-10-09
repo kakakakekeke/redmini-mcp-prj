@@ -5,6 +5,11 @@ updated: 2026-10-09
 tags:
   - todo
   - tracker
+aliases:
+  - todo
+status: active
+related:
+  - "[[index]]"
 ---
 
 # 📋 Redmine MCP 서버 개발 TO-DO
