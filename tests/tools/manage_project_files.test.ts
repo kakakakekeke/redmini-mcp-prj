@@ -497,5 +497,101 @@ describe("manage_project_files tool", () => {
       });
       await expect(manageProjectFilesHandler(args, mockClient)).rejects.toThrow("boom");
     });
+
+    // 라이브 검증: 무효·만료 토큰으로 POST /projects/{id}/files.json 하면 Redmine 은 422 가 아니라 404 를 반환한다.
+    describe("404 on add (invalid/expired token is reported as 404 by Redmine)", () => {
+      it("should mention the upload token and upload_attachment, not only a missing project", async () => {
+        mockClient.addProjectFile.mockRejectedValue(axiosError(404));
+        const args = manageProjectFilesSchema.parse({
+          action: "add",
+          project_id: "test-project",
+          token: VALID_TOKEN,
+          dry_run: false,
+        });
+        const result: any = await manageProjectFilesHandler(args, mockClient);
+        expect(result.error).toContain("404");
+        expect(result.error).toMatch(/토큰/);
+        expect(result.error).toContain("upload_attachment");
+        expect(result.error).toContain("test-project");
+        expect(result.error).not.toMatch(/^해당 프로젝트를 찾을 수 없습니다/);
+        expect(result.error).not.toMatch(/버전/);
+      });
+
+      it("should never include the raw token in the error message", async () => {
+        mockClient.addProjectFile.mockRejectedValue(axiosError(404));
+        const args = manageProjectFilesSchema.parse({
+          action: "add",
+          project_id: 5,
+          token: VALID_TOKEN,
+          version_id: 3,
+          dry_run: false,
+        });
+        const result: any = await manageProjectFilesHandler(args, mockClient);
+        expect(result.error).not.toContain(VALID_TOKEN);
+        expect(result.error).not.toContain(VALID_TOKEN.split(".")[1]);
+      });
+
+      it("should list token, project and version ownership causes when version_id is given", async () => {
+        mockClient.addProjectFile.mockRejectedValue(axiosError(404));
+        const args = manageProjectFilesSchema.parse({
+          action: "add",
+          project_id: 5,
+          token: VALID_TOKEN,
+          version_id: 3,
+          dry_run: false,
+        });
+        const result: any = await manageProjectFilesHandler(args, mockClient);
+        expect(result.error).toMatch(/토큰/);
+        expect(result.error).toMatch(/프로젝트/);
+        expect(result.error).toMatch(/버전/);
+      });
+
+      it("should drop project/version causes when the version name was resolved against owned versions", async () => {
+        mockClient.getProjectVersions.mockResolvedValue({
+          versions: [{ id: 4, name: "v1.0", project: { id: 5 } }],
+        });
+        mockClient.addProjectFile.mockRejectedValue(axiosError(404));
+        const args = manageProjectFilesSchema.parse({
+          action: "add",
+          project_id: 5,
+          token: VALID_TOKEN,
+          version: "v1.0",
+          dry_run: false,
+        });
+        const result: any = await manageProjectFilesHandler(args, mockClient);
+        expect(mockClient.getProject).not.toHaveBeenCalled();
+        expect(result.error).toContain("프로젝트 5 는 확인됨");
+        expect(result.error).toMatch(/토큰/);
+        expect(result.error).toContain("upload_attachment");
+        expect(result.error).not.toMatch(/프로젝트를 찾을 수 없/);
+        expect(result.error).not.toMatch(/소유/);
+      });
+
+      it("should keep the version ownership cause when ownership could not be verified", async () => {
+        mockClient.getProject.mockResolvedValue({});
+        mockClient.getProjectVersions.mockResolvedValue({
+          versions: [{ id: 9, name: "v1.0", project: { id: 1 } }],
+        });
+        mockClient.addProjectFile.mockRejectedValue(axiosError(404));
+        const args = manageProjectFilesSchema.parse({
+          action: "add",
+          project_id: "unknown-ident",
+          token: VALID_TOKEN,
+          version: "v1.0",
+          dry_run: false,
+        });
+        const result: any = await manageProjectFilesHandler(args, mockClient);
+        expect(result.error).toMatch(/토큰/);
+        expect(result.error).not.toMatch(/프로젝트를 찾을 수 없/);
+        expect(result.error).toMatch(/소유/);
+      });
+
+      it("should keep the plain project-not-found message for list", async () => {
+        mockClient.getProjectFiles.mockRejectedValue(axiosError(404));
+        const args = manageProjectFilesSchema.parse({ action: "list", project_id: "test-project" });
+        const result: any = await manageProjectFilesHandler(args, mockClient);
+        expect(result.error).toBe("해당 프로젝트를 찾을 수 없습니다: test-project");
+      });
+    });
   });
 });

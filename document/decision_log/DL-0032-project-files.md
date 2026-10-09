@@ -50,7 +50,8 @@ related:
 | `dry_run` | boolean | 기본 `true` ([[DL-0007-dry-run-default-true]]). 미리보기에도 버전 이름은 해석해 실제 전송될 `version_id` 를 보여 준다(조회 API만 호출). 미리보기의 토큰은 `7167.ed10…` 처럼 마스킹 |
 
 - 클라이언트: `getProjectFiles(projectId)`, `addProjectFile(projectId, { token, filename?, description?, version_id? })`. 등록 성공 응답은 Redmine 버전에 따라 본문 없는 200 또는 204 이므로 메시지로 정규화한다. 기존 `getProjectVersions` 에도 `encodeURIComponent` 를 적용했다(버전 이름 해석 경로의 경로 조작 방어, `manage_versions` 도 함께 혜택).
-- 에러: 404(프로젝트 없음, 버전 지정 시 "버전이 이 프로젝트 소유가 아닐 수 있음" 안내), 403(권한 없음 또는 파일 모듈 비활성), 400(토큰 무효·만료)은 `{ error }` 로 반환한다. 422 는 FilesController 가 내지 않지만 방어적으로 `{ error }` 로 변환한다.
+- 에러: 404(프로젝트 없음, 버전 지정 시 "버전이 이 프로젝트 소유가 아닐 수 있음" 안내), 403(권한 없음 또는 파일 모듈 비활성), 400(토큰 무효·만료)은 `{ error }` 로 반환한다.
+  - 후속(fix/project-files-404-message): 라이브 실측상 무효·만료 토큰의 `add` 는 400 이 아니라 **404(빈 본문)** 로 응답한다. 따라서 `add` 의 404 는 원인을 단정하지 않고 (1) 토큰 무효·만료 → `upload_attachment` 재발급, (2) 프로젝트 없음, (3) 버전 미존재·비소유를 후보로 안내하며, 버전 이름 해석으로 이미 확인된 원인은 추가 API 호출 없이 뺀다. `list` 의 404 는 "프로젝트 없음" 그대로이고, 400 분기는 방어 코드로 남긴다. 422 는 FilesController 가 내지 않지만 방어적으로 `{ error }` 로 변환한다.
 - Redmine 데이터(버전 이름, 422 메시지)를 담는 실패는 예외가 아닌 결과 객체로 반환해 `processToolResult` 를 거치게 한다(예외는 MCP SDK 가 `isError` 로 바꿔 탐지 레이어를 우회하므로).
 - `list` 결과는 사용자 입력(description 등)을 포함하므로 `processToolResult`(프롬프트 인젝션 탐지)를 거친다.
 
