@@ -12,6 +12,10 @@ related:
   - "[[index]]"
   - "[[redmine_api_specification]]"
   - "[[DL-0008-subagent-todo-completion-enforcement]]"
+updated: 2026-09-20
+aliases:
+  - DL-0014-upload-attachment-tool-design
+status: active
 ---
 
 # DL-0014: 파일 업로드 및 첨부 토큰 발급(upload_attachment) 도구 설계

@@ -6,6 +6,12 @@ tags:
   - decision-log
   - test
   - sse
+updated: "2026-09-19"
+aliases:
+  - DL-0003-eventsource
+status: active
+related:
+  - "[[index]]"
 ---
 
 # DL-0003: E2E 테스트 시 SSEClientTransport 동작을 위한 eventsource 패키지 도입

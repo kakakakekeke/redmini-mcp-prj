@@ -7,6 +7,12 @@ tags:
   - cors
   - security
   - http
+updated: 2026-09-21
+aliases:
+  - DL-0016-cors-middleware
+status: active
+related:
+  - "[[index]]"
 ---
 
 # DL-0016: 웹 클라이언트 및 브라우저 에이전트 연동을 위한 cors 미들웨어 도입

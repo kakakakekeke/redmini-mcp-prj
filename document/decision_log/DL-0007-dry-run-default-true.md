@@ -11,6 +11,8 @@ tags:
 related:
   - "[[0003-write-feature-safety-model]]"
   - "[[DL-0006-write-tools-design]]"
+aliases:
+  - DL-0007-dry-run-default-true
 ---
 
 # DL-0007: dry_run 파라미터 기본값 변경 (false -> true)

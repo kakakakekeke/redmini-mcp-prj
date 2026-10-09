@@ -11,6 +11,8 @@ tags:
   - todo
   - subagent
   - workflow
+aliases:
+  - DL-0008-subagent-todo-completion-enforcement
 ---
 
 # DL-0008: 서브에이전트 기능 커밋 시 TO-DO 대기열 완료([x]) 동기화 의무화

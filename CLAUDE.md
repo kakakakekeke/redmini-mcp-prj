@@ -43,7 +43,7 @@
 ## 작업 방식 요약
 
 1. **코드 수정은 워크트리에서**: 메인 세션은 문서·대기열만 다룹니다. 코드는 `Agent`(`isolation: "worktree"`)로 위임하거나, 사용자가 원하면 `EnterWorktree`로 세션 자체를 워크트리로 옮겨 작업합니다.
-2. **TDD**: `vibe-tdd-workflow` 스킬 → `document/sop/vibe_tdd_sop.md`. 테스트는 `./node_modules/.bin/vitest run`.
-3. **리뷰**: 구현 후 `deep-code-reviewer`, `security-code-reviewer` 서브에이전트를 병렬 호출합니다.
-4. **커밋**: `git-workflow` 스킬 참고. `--no-verify` 금지. 코어 파일(`package.json`, `tsconfig.json`, `document/index.md`, `src/index.ts`, `.agents/`, `AGENTS.md`, `.husky/`, `.claude/`, `CLAUDE.md`, `.mcp.json`) 변경 시 커밋 본문에 `[Impact-Reviewed]` 포함.
+2. **TDD**: `vibe-tdd-workflow` 스킬 → `document/sop/vibe_tdd_sop.md`. 단일 파일은 `./node_modules/.bin/vitest run <파일>`, 회귀 검증은 `npm test`(커버리지 기준선 포함).
+3. **리뷰**: SOP 3단계 등급표(R0 생략 / R1 `deep-code-reviewer` / R2 + `security-code-reviewer`)에 따라 호출합니다.
+4. **커밋**: `git-workflow` 스킬 참고. `--no-verify` 금지. 코어 파일(`package.json`, `tsconfig.json`, `vitest.config.*`, `document/index.md`, `src/index.ts`, `.agents/`, `AGENTS.md`, `.husky/`, `.claude/`, `CLAUDE.md`, `.mcp.json`) 변경 시 커밋 본문에 `[Impact-Reviewed]` 포함.
 5. **todo.md는 메인 세션 전담**: 항목 추가·순서 변경은 사용자 승인 후 커밋. 완료(`[x]`) 처리는 병합 직후 main에서 수행. 서브에이전트는 todo.md를 수정하지 않습니다.

@@ -15,6 +15,8 @@ related:
   - "[[index]]"
   - "[[architecture_design]]"
   - "[[vibe_tdd_sop]]"
+aliases:
+  - DL-0011-security-logger
 ---
 
 # DL-0011: 보안 로거(Security Logger) 설계 및 개인정보·API 키 마스킹 정책

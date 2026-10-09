@@ -41,32 +41,31 @@ if [ -n "$INPUT" ]; then
 fi
 
 # 4. Check for unindexed files in document/**/*.md
-MISSING=""
-for f in $(find "$DOC_DIR" -type f -name "*.md"); do
+# 공백이 든 파일명도 처리하도록 줄 단위로 읽는다 (서브셸 결과는 출력으로 수집)
+MISSING=$(find "$DOC_DIR" -type f -name "*.md" ! -path "*/.obsidian/*" | while IFS= read -r f; do
   [ "$f" = "$INDEX_FILE" ] && continue
   fname=$(basename "$f")
   base=$(basename "$f" .md)
-  # Check if the base name exists in the index
-  if ! grep -q "$base" "$INDEX_FILE"; then
-    MISSING="${MISSING} ${fname}"
+  # 색인표 행(| **[[문서명| ...)으로 등록되어 있어야 한다. 본문에 이름만 언급된 것은 인정하지 않음 (DL-0029)
+  base_re=$(printf '%s' "$base" | sed 's/[][\.*^$+?(){}|/]/\\&/g')
+  # 문서명 뒤에는 '|'(별칭), '\|'(표 안 이스케이프 별칭), ']]' 중 하나가 와야 한다
+  if ! grep -Eq '^[[:space:]]*\|[[:space:]]*\*\*\[\['"$base_re"'[]|\\]' "$INDEX_FILE"; then
+    printf ' %s' "$fname"
   fi
-done
+done)
 
 # 5. Check for deleted files that are still referenced in active catalog rows
-DELETED=""
-# Extract links cleanly: matches [[...]] and takes the first part before | or ]]
-ACTIVE_LINKS=$(grep -E '^\s*\|\s*\*\*\[\[' "$INDEX_FILE" 2>/dev/null | sed -n 's/.*\[\[\([^]|]*\).*/\1/p' | sort -u)
-
-for link in $ACTIVE_LINKS; do
+# Extract links cleanly: matches [[...]] and takes the first part before | or ]] (표 안 이스케이프 '\|' 의 역슬래시 제거)
+# 공백이 든 문서명도 처리하도록 줄 단위로 읽는다.
+DELETED=$(grep -E '^[[:space:]]*\|[[:space:]]*\*\*\[\[' "$INDEX_FILE" 2>/dev/null \
+  | sed -n 's/.*\[\[\([^]|]*\).*/\1/p' | sed 's/\\$//' | sort -u | while IFS= read -r link; do
   target_base=$(basename "$link")
   [ "$target_base" = "index" ] && continue
-  
-  # Recursively find the file in DOC_DIR
-  found_file=$(find "$DOC_DIR" -type f -name "${target_base}.md")
-  if [ -z "$found_file" ]; then
-    DELETED="${DELETED} ${target_base}.md"
+  # Recursively find the file in DOC_DIR (glob 특수문자를 피하기 위해 -name 대신 정확 비교)
+  if ! find "$DOC_DIR" -type f -name "*.md" | while IFS= read -r f; do [ "$(basename "$f" .md)" = "$target_base" ] && echo hit; done | grep -q hit; then
+    printf ' %s' "${target_base}.md"
   fi
-done
+done)
 
 # 6. Output decision
 if [ -n "$MISSING" ] || [ -n "$DELETED" ]; then

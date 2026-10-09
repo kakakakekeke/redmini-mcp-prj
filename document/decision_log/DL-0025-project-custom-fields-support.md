@@ -7,6 +7,12 @@ tags:
   - custom-fields
   - get-projects
   - redmine-api
+updated: 2026-09-21
+aliases:
+  - DL-0025-project-custom-fields-support
+status: active
+related:
+  - "[[index]]"
 ---
 
 # DL-0025: get_projects 도구 확장 및 프로젝트별 일감 커스텀 필드(issue_custom_fields) 조회 지원

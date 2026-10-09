@@ -4,6 +4,12 @@ created: 2026-MM-DD
 author: [작성자/에이전트명]
 tags:
   - decision-log
+updated: 2026-MM-DD
+aliases:
+  - DL-[NNNN]
+status: active  # active | superseded | deprecated
+related:
+  - "[[관련 문서명]]"
 ---
 
 # DL-[NNNN]: [결정 사항 요약]

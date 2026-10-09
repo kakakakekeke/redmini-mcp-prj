@@ -10,6 +10,10 @@ tags:
 related:
   - "[[0003-write-feature-safety-model]]"
   - "[[DL-0007-dry-run-default-true]]"
+updated: 2026-09-21
+aliases:
+  - DL-0019-add-issue-note-dry-run
+status: active
 ---
 
 # DL-0019: add_issue_note 도구에 dry_run 파라미터 추가 및 기본값 true 적용

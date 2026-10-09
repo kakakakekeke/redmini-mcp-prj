@@ -15,7 +15,7 @@ fi
 # 2. Scope 영향도 검토 (Core Files)
 # 코어 파일 목록: package.json, 설정 파일, 인덱스 파일 등 프로젝트 전역에 영향을 주는 파일
 # 가드레일 자체(.husky/, .agents/, .claude/, AGENTS.md, CLAUDE.md)도 코어 파일로 취급한다. (DL-0028)
-CORE_FILES="package.json tsconfig.json document/index.md src/index.ts .agents/ AGENTS.md .husky/ .claude/ CLAUDE.md .mcp.json"
+CORE_FILES="package.json tsconfig.json vitest.config. document/index.md src/index.ts .agents/ AGENTS.md .husky/ .claude/ CLAUDE.md .mcp.json"
 # --cached 로 스테이징된 파일 목록을 가져와서 코어 파일이 수정되었는지 확인
 # 이름 변경은 원래 경로도 검사(--no-renames), 비ASCII 경로는 이스케이프 없이 비교(quotePath=false)
 CHANGED=$(git -c core.quotePath=false diff --cached --name-only --no-renames)

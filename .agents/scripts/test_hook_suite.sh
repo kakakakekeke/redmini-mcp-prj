@@ -105,6 +105,34 @@ run_test "다중 미등록 파일 동시 감지 (모든 파일명 리포트 확�
   "continue" "test_unindexed_3.md"
 cleanup; cp "$INDEX_FILE" "$ORIG_INDEX"
 
+touch "$DOC_DIR/test_prose_only.md"
+printf "\n본문에서만 test_prose_only 를 언급합니다.\n" >> "$INDEX_FILE"
+run_test "본문에만 언급되고 색인표 행이 없는 문서 감지" \
+  "echo '{\"terminationReason\": \"model_stop\"}' | '$HOOK'" \
+  "continue" "test_prose_only.md"
+cleanup; cp "$INDEX_FILE" "$ORIG_INDEX"
+
+touch "$DOC_DIR/test_a.b+c(d).md"
+printf "\n| **[[test_a.b+c(d)\\|document/test_a.b+c(d).md]]** | \`특수\` | 특수 | 특수문자 이름 |\n" >> "$INDEX_FILE"
+run_test "특수문자(. + ( ))가 든 문서가 색인표에 정상 등록되면 통과" \
+  "echo '{\"terminationReason\": \"model_stop\"}' | '$HOOK'" \
+  "allow"
+cleanup; cp "$INDEX_FILE" "$ORIG_INDEX"
+
+touch "$DOC_DIR/test_foo.md" "$DOC_DIR/test_foo_bar.md"
+printf "\n| **[[test_foo_bar|document/test_foo_bar.md]]** | \`x\` | x | x |\n" >> "$INDEX_FILE"
+run_test "접두사 충돌(test_foo 는 미등록, test_foo_bar 만 등록) 감지" \
+  "echo '{\"terminationReason\": \"model_stop\"}' | '$HOOK'" \
+  "continue" "test_foo.md"
+cleanup; cp "$INDEX_FILE" "$ORIG_INDEX"
+
+touch "$DOC_DIR/test_sp ace.md"
+printf "\n| **[[test_sp ace|document/test_sp ace.md]]** | \`공백\` | 공백 | 공백 파일명 |\n" >> "$INDEX_FILE"
+run_test "공백이 든 파일명이 색인표에 등록되면 통과" \
+  "echo '{\"terminationReason\": \"model_stop\"}' | '$HOOK'" \
+  "allow"
+cleanup; cp "$INDEX_FILE" "$ORIG_INDEX"
+
 touch "$DOC_DIR/test_SPEC-V2.0_Final.md"
 run_test "특수문자/하이픈/대문자/점 복합 파일명 감지" \
   "echo '{\"terminationReason\": \"model_stop\"}' | '$HOOK'" \

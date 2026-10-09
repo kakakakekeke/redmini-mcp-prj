@@ -14,6 +14,10 @@ related:
   - "[[redmine_api_specification]]"
   - "[[DL-0014-upload-attachment-tool-design]]"
   - "[[attachment_guide]]"
+updated: 2026-09-20
+aliases:
+  - DL-0015-get-attachment-content-design
+status: active
 ---
 
 # DL-0015: 첨부파일 본문 내용 조회(get_attachment_content) 도구 설계

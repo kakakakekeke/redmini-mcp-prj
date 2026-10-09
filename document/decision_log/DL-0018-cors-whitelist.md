@@ -7,6 +7,12 @@ tags:
   - cors
   - security
   - http
+updated: 2026-09-21
+aliases:
+  - DL-0018-cors-whitelist
+status: active
+related:
+  - "[[index]]"
 ---
 
 # DL-0018: CORS 와일드카드 제거 및 환경변수 기반 화이트리스트 도입

@@ -9,6 +9,11 @@ tags:
   - worktree
   - commit-convention
   - multi-agent
+aliases:
+  - git_workflow_sop
+status: active
+related:
+  - "[[index]]"
 ---
 
 # 표준 운영 절차 (SOP): Git 협업 및 워크플로우
@@ -28,10 +33,11 @@ tags:
 
 ### 4.1. 브랜치 관리 전략
 - **기본 브랜치**: `main` (항상 배포 가능한 상태를 유지)
-- **작업 브랜치 네이밍 규칙**: `<타입>/<이슈번호_또는_작업명>`
-  - 기능 개발: `feature/` (예: `feature/login-api`)
-  - 버그 수정: `bugfix/` (예: `bugfix/fix-null-pointer`)
-  - 문서 작업: `docs/` (예: `docs/update-readme`)
+- **작업 브랜치 네이밍 규칙**: `<타입>/<작업명-kebab-case>` — 타입은 **커밋 타입과 동일**하게 씁니다. (DL-0029)
+  - `feat/` 기능 개발 (예: `feat/login-api`), `fix/` 버그·보안 수정, `docs/` 문서, `chore/` 설정·도구·가드레일, `test/` 테스트, `refactor/` 리팩터링
+  - `document/todo.md`의 항목 첫머리 브랜치명과 **정확히 일치**시켜야 pre-commit 대기열 경고가 뜨지 않습니다.
+  - 시스템이 자동 생성한 워크트리 브랜치(Claude Code `worktree-<name>`, Antigravity `subagent-...`)는 작업 시작 시 `git branch -m <타입>/<작업명>`으로 이름을 바꿉니다.
+  - (과거 `feature/`, `bugfix/` 브랜치는 이력으로만 남아 있으며 신규 사용하지 않습니다.)
 - **병합 방식**: 모든 작업은 완료 후 PR(Pull Request) 혹은 직접 병합 시 Fast-forward를 방지하고 커밋 히스토리를 깔끔하게 유지할 것.
 
 ### 4.2. 커밋 메시지 컨벤션 (Conventional Commits)

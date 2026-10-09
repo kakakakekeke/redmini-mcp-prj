@@ -7,6 +7,10 @@ tags:
   - adr
   - architecture
   - typescript
+aliases:
+  - 0001-initial-architecture
+related:
+  - "[[index]]"
 ---
 
 # ADR-0001: Redmine MCP 서버 초기 아키텍처 및 기술 스택 결정

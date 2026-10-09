@@ -1,16 +1,24 @@
 ---
 title: "ADR-0002: 테스트 아키텍처 및 Mocking 전략 결정"
 created: 2026-09-19
-updated: 2026-09-19
-status: Accepted
+updated: 2026-10-09
+status: Superseded
 tags:
   - adr
   - architecture
   - test
   - tdd
+aliases:
+  - 0002-test-architecture
+related:
+  - "[[0005-test-architecture-revision]]"
+  - "[[index]]"
 ---
 
 # ADR-0002: 테스트 아키텍처 및 Mocking 전략 결정
+
+> [!warning] 대체됨 (Superseded by ADR-0005)
+> MSW/Nock 통합 테스트와 `tests/integration/`·`tests/fixtures/` 구조는 도입되지 않았습니다. 현재 테스트 구조와 커버리지 기준선은 [[0005-test-architecture-revision|ADR-0005]]를 따르십시오.
 
 ## 1. 배경 및 맥락 (Context)
 Redmine MCP 프로젝트는 AI 에이전트 주도의 바이브 코딩(Vibe Coding)을 위해 TDD(Test-Driven Development) 방식을 채택했습니다(`DL-0001-vitest`, `vibe_tdd_sop`).

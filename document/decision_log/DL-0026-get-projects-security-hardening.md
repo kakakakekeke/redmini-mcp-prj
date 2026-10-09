@@ -9,6 +9,12 @@ tags:
   - get-projects
   - resolver
   - error-handling
+updated: 2026-09-21
+aliases:
+  - DL-0026-get-projects-security-hardening
+status: active
+related:
+  - "[[index]]"
 ---
 
 # DL-0026: get_projects 도구 및 getProject API 보안 강화
