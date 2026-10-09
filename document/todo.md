@@ -29,13 +29,13 @@ related:
 * (현재 등록된 모든 P2 작업이 완료되었습니다.)
 
 ### 🧩 기능 확장 — Redmine API 커버리지
-- [ ] 아키텍처 및 라이브러리 도입 관련 DL/ADR 작성 여부 판단 — 클라이언트 인스턴스 스코프 캐시(전역 캐시 배제) 결정은 DL로 기록
-- [ ] `feat/custom-field-defs-cache` : `/custom_fields.json` 조회 결과를 RedmineClient 인스턴스 단위 TTL 캐시(성공 5분·401/403 10분·5xx 미캐시, 동시 호출 병합, 허용값 거부 전 1회 강제 재조회) — 비관리자 키의 반복 403 요청 제거 — [[DL-0035-issue-custom-field-values]]
+* (현재 등록된 모든 기능 확장 작업이 완료되었습니다.)
 
 ### 📌 P3 — 중기 조치 (보안 감사 기반, 1개월)
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
 
 ## ✅ 완료된 작업 (Done)
+- [x] `feat/custom-field-defs-cache` : `/custom_fields.json` 결과를 RedmineClient 인스턴스 단위 TTL 캐시(성공 5분·401/403 10분·그 외 미캐시, 동시 호출 병합, 거부 전 1회 강제 재조회) — 라이브 실측 세션당 1회 — [[DL-0036-custom-field-defs-cache]]
 - [x] `feat/issue-custom-field-values` : `create_issue`·`update_issue`에 `custom_fields`(이름/ID 키, 관리자 키 허용값·다중선택 사전 검증, 비관리자 Redmine 422 위임, regexp는 ReDoS 방지로 미실행) — 라이브 검증 12/12 — [[DL-0035-issue-custom-field-values]], [[DL-0034-live-api-coverage-verification]]
 - [x] `fix/project-files-404-message` : `manage_project_files` add 404 시 업로드 토큰 무효·만료를 원인으로 안내 (라이브 검증 발견 결함) — [[DL-0034-live-api-coverage-verification]], [[DL-0032-project-files]]
 - [x] `feat/saved-queries` : `search_issues`에 `saved_query`(필터 이름 → `query_id`, 프로젝트 우선·모호성 처리) 및 `list_saved_queries` 목록 조회 모드 추가 — [[DL-0031-saved-queries]]

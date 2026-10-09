@@ -79,6 +79,7 @@ flowchart TD
 - **R2 리뷰 반영**: 강제 재조회 실패(5xx·네트워크·형식 오류) 강등·캐시 무효화, 동시 거부의 재조회 병합, 강제 재조회 in-flight 실패 정리 테스트 추가(deep L4), 엔트리 크기 상한(security L3), 권한 박탈 후 통과 경로 동작 고정 테스트(security L1), 주석 정확도(deep L2·L3), `mcp_tools_spec` 반영(deep M2).
 
 ## 4. 후속 조치 (Action Items)
+- [x] 로컬 Redmine 라이브 검증 (병합 `a613657`) — 요청 계수 프록시로 측정: 비관리자 `create_issue` 6회(순차 3 + 동시 3) → `/custom_fields.json` **1회(403)**, 관리자 6회 → **1회(200)**, 관리자 허용값 위반 → 강제 재조회 **1회** 후 거부, 새 세션은 다시 1회 조회(세션 단위 격리). 커스텀 필드 회귀 시나리오 12/12 통과 ([[DL-0034-live-api-coverage-verification]] §5-2)
 - [x] `src/utils/issue_custom_fields.ts` 에 클라이언트 단위 캐시·in-flight 병합·거부 전 강제 재조회 구현
 - [x] `tests/unit/issue_custom_fields.test.ts` 에 캐시 적중, TTL 만료, 401/403 음성 캐시, 5xx·404·네트워크·형식 오류 미캐시, 동시 호출 병합·실패 정리, 인스턴스 격리, 강제 재조회(통과·재거부·트래커·다중선택·강등) 테스트 추가
 - [ ] 프로젝트 필드 목록 캐시가 필요해지면 이름 해석 실패 시 재조회 경로와 프로젝트별 엔트리 상한을 함께 설계

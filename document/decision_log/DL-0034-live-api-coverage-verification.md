@@ -21,6 +21,7 @@ related:
   - "[[DL-0032-project-files]]"
   - "[[DL-0033-project-memberships-categories]]"
   - "[[DL-0035-issue-custom-field-values]]"
+  - "[[DL-0036-custom-field-defs-cache]]"
   - "[[DL-0009-live-write-tools-verification]]"
   - "[[integration_test_scenarios]]"
 ---
@@ -168,6 +169,20 @@ sequenceDiagram
 
 > [!note] 관찰
 > Redmine 422 메시지는 필드명을 `humanize` 처리해 `Mcp-test 요청번호`처럼 대소문자가 바뀌어 표시된다(Redmine 동작, 기능 영향 없음).
+
+---
+
+## 5-2. 추가 검증: 커스텀 필드 정의 캐시 (DL-0036, 병합 `a613657`)
+
+Redmine 컨테이너가 요청 로그를 남기지 않으므로, MCP 서버의 `REDMINE_URL`을 요청 계수 프록시(`:3999` → `:3000`)로 지정해 `/custom_fields.json` 호출 수를 측정했다.
+
+| 시나리오 | `/custom_fields.json` 호출 | 결과 |
+|:--|:--|:--|
+| 비관리자 세션, `create_issue` 순차 3 + 동시 3회 | 1회 (403, 이후 음성 캐시) | ✅ |
+| 관리자 세션, `create_issue` 순차 3 + 동시 3회 | 1회 (200, 이후 캐시 적중·동시 호출 병합) | ✅ |
+| 관리자, 캐시된 정의로 허용값 위반(`D사`) | 강제 재조회 1회 후 거부 | ✅ |
+| 비관리자 새 세션(새 클라이언트) | 다시 1회 (세션 단위 격리) | ✅ |
+| §5-1 커스텀 필드 시나리오 회귀 | — | 12/12 ✅ |
 
 ---
 
