@@ -89,6 +89,11 @@ export interface GetMyAccountParams {
   include_groups?: boolean;
 }
 
+export interface GetQueriesParams {
+  limit?: number;
+  offset?: number;
+}
+
 export interface GetTimeEntriesParams {
   project_id?: string | number;
   issue_id?: number;
@@ -293,6 +298,40 @@ export class RedmineClient {
   async getPriorities() {
     const { data } = await this.api.get('/enumerations/issue_priorities.json');
     return data;
+  }
+
+  /** 저장된 필터(Queries) 한 페이지 조회 (GET /queries.json). DL-0031 */
+  async getQueries(params?: GetQueriesParams) {
+    const queryParams: Record<string, number> = {};
+    if (params?.limit !== undefined) queryParams.limit = params.limit;
+    if (params?.offset !== undefined) queryParams.offset = params.offset;
+    const { data } = await this.api.get('/queries.json', { params: queryParams });
+    return data;
+  }
+
+  /** 페이지 상한(DoS 방지). 100건 × 20페이지 = 최대 2,000개 필터. */
+  static readonly MAX_QUERY_PAGES = 20;
+
+  /** 저장된 필터 전체 조회 (이름 매칭용). 페이지 상한에 걸리면 truncated: true. DL-0031 */
+  async getAllQueries(): Promise<{ queries: any[]; total_count: number; truncated: boolean }> {
+    const limit = 100;
+    let offset = 0;
+    let allQueries: any[] = [];
+    let totalCount = 0;
+
+    for (let page = 0; page < RedmineClient.MAX_QUERY_PAGES; page++) {
+      const data = await this.getQueries({ limit, offset });
+      const queries: any[] = Array.isArray(data?.queries) ? data.queries : [];
+      allQueries = allQueries.concat(queries);
+      totalCount = typeof data?.total_count === "number" ? data.total_count : 0;
+      // 서버가 limit 보다 적게 돌려줄 수 있으므로(설정 상한) 받은 개수만큼 전진한다
+      offset += queries.length;
+      if (queries.length === 0 || offset >= totalCount) {
+        return { queries: allQueries, total_count: totalCount, truncated: false };
+      }
+    }
+
+    return { queries: allQueries, total_count: totalCount, truncated: true };
   }
 
   async createIssue(payload: any) {

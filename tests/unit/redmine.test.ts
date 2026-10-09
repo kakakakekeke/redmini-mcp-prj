@@ -1008,3 +1008,78 @@ it("should normalize 204 No Content or empty data to success message on update",
     });
   });
 });
+
+describe("RedmineClient saved queries (GET /queries.json)", () => {
+  let client: RedmineClient;
+
+  beforeEach(() => {
+    client = new RedmineClient("http://localhost", "dummy");
+  });
+
+  it("getQueries should call GET /queries.json with limit/offset and return the page", async () => {
+    const page = { queries: [{ id: 1, name: "내 미해결 결함", is_public: false }], total_count: 1, offset: 0, limit: 25 };
+    const mockGet = vi.fn().mockResolvedValue({ data: page });
+    (client as any).api = { get: mockGet };
+
+    const data = await client.getQueries({ limit: 25, offset: 0 });
+    expect(mockGet).toHaveBeenCalledWith("/queries.json", { params: { limit: 25, offset: 0 } });
+    expect(data).toEqual(page);
+  });
+
+  it("getQueries should omit undefined params", async () => {
+    const mockGet = vi.fn().mockResolvedValue({ data: { queries: [] } });
+    (client as any).api = { get: mockGet };
+
+    await client.getQueries();
+    expect(mockGet).toHaveBeenCalledWith("/queries.json", { params: {} });
+  });
+
+  it("getAllQueries should paginate until total_count is reached", async () => {
+    const mockGet = vi.fn();
+    (client as any).api = { get: mockGet };
+    mockGet
+      .mockResolvedValueOnce({ data: { queries: Array.from({ length: 100 }, (_, i) => ({ id: i + 1, name: `q${i}` })), total_count: 130 } })
+      .mockResolvedValueOnce({ data: { queries: Array.from({ length: 30 }, (_, i) => ({ id: 101 + i, name: `r${i}` })), total_count: 130 } });
+
+    const data = await client.getAllQueries();
+    expect(mockGet).toHaveBeenCalledTimes(2);
+    expect(mockGet).toHaveBeenNthCalledWith(1, "/queries.json", { params: { limit: 100, offset: 0 } });
+    expect(mockGet).toHaveBeenNthCalledWith(2, "/queries.json", { params: { limit: 100, offset: 100 } });
+    expect(data.queries).toHaveLength(130);
+    expect(data.total_count).toBe(130);
+    expect(data.truncated).toBe(false);
+  });
+
+  it("getAllQueries should stop when a page is empty even if total_count is larger", async () => {
+    const mockGet = vi.fn();
+    (client as any).api = { get: mockGet };
+    mockGet
+      .mockResolvedValueOnce({ data: { queries: [{ id: 1, name: "a" }], total_count: 999 } })
+      .mockResolvedValueOnce({ data: { queries: [], total_count: 999 } });
+
+    const data = await client.getAllQueries();
+    expect(mockGet).toHaveBeenCalledTimes(2);
+    expect(data.queries).toHaveLength(1);
+  });
+
+  it("getAllQueries should cap the number of pages fetched (DoS guard)", async () => {
+    const mockGet = vi.fn().mockImplementation(async () => ({
+      data: { queries: Array.from({ length: 100 }, (_, i) => ({ id: i, name: `q${i}` })), total_count: 10_000_000 },
+    }));
+    (client as any).api = { get: mockGet };
+
+    const data = await client.getAllQueries();
+    expect(mockGet).toHaveBeenCalledTimes(RedmineClient.MAX_QUERY_PAGES);
+    expect(data.queries).toHaveLength(RedmineClient.MAX_QUERY_PAGES * 100);
+    expect(data.truncated).toBe(true);
+  });
+
+  it("getAllQueries should handle a response without queries/total_count", async () => {
+    const mockGet = vi.fn().mockResolvedValue({ data: {} });
+    (client as any).api = { get: mockGet };
+
+    const data = await client.getAllQueries();
+    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(data).toEqual({ queries: [], total_count: 0, truncated: false });
+  });
+});

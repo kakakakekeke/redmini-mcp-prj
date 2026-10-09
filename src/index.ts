@@ -57,7 +57,7 @@ export function createRedmineMcpServer(headers: Record<string, string | string[]
   
   server.tool(
     "search_issues",
-    "키워드, 프로젝트, 상태(이름 또는 ID), 트래커(이름 또는 ID), 담당자 등 다양한 조건으로 일감을 검색합니다.",
+    "키워드, 프로젝트, 상태(이름 또는 ID), 트래커(이름 또는 ID), 담당자, 저장된 필터(saved_query 이름 또는 query_id) 등 다양한 조건으로 일감을 검색합니다. list_saved_queries: true이면 일감 대신 저장된 필터 목록을 반환합니다.",
     searchIssuesSchema.shape,
     async (args) => {
       const result = await searchIssuesHandler(args as any, client);

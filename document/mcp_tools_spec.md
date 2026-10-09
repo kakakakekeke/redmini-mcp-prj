@@ -78,6 +78,8 @@ LLM(Claude/Cursor)이 불필요하게 많은 도구를 가지지 않도록(Tool 
         *   `author` (string, optional): 작성자 이름 또는 로그인 계정명. Smart Name Resolver 자동 변환.
     *   **검색 및 쿼리**:
         *   `query_id` (string, optional): Redmine에 저장된 사용자 정의 검색(Saved Query) 숫자 ID.
+        *   `saved_query` (string, optional): 저장된 필터 **이름** (예: `내 미해결 결함`). `query_id`로 자동 변환하며, 같은 이름이 여러 개면 `project`/`project_id`의 필터 → 전역 필터 순으로 고르고 그래도 모호하면 후보 ID 목록과 함께 에러. 다른 프로젝트 전용 필터만 있으면 에러, 프로젝트 미지정 상태에서 프로젝트 전용 필터로 해석되면 그 프로젝트로 범위를 자동 지정. `query_id`가 있으면 `query_id` 우선. 결과에 `_resolved_saved_query` 포함. ([[DL-0031-saved-queries|DL-0031]])
+        *   `list_saved_queries` (boolean, optional): `true`면 일감 대신 저장된 필터 목록(`id`, `name`, `is_public`, `project_id`)과 `total_count`를 반환 (`limit`/`offset` 페이징, `project`/`project_id` 지정 시 해당 프로젝트 + 전역 필터만). 다른 검색 조건은 무시.
         *   `query` (string, optional): 제목/본문 검색 키워드 (최대 100자, `subject: ~query`로 자동 매핑).
         *   `subject` (string, optional): 제목 검색 필터 (예: `~로그인` 또는 `로그인`).
         *   `description` (string, optional): 본문/설명 검색 필터 (예: `~오류`).
