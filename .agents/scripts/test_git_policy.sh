@@ -92,6 +92,12 @@ echo 'export const n: number = "str";' > src/zz_probe.ts; git add src/zz_probe.t
 expect "branch: 타입 에러 커밋 차단 (tsc)" "fail:타입 검사" git commit -qm "feat(probe): bad types"
 echo 'export const n: number = 1;' > src/zz_probe.ts; git add src/zz_probe.ts
 expect "branch: 정상 커밋 허용" pass git commit -qm "feat(probe): good types"
+sed -i '' '/^### 🚨 P1/a\
+1. [ ] `feat/probe` : 설명에 `백틱` 이 여러 개 `있는` 항목
+' document/todo.md
+out=$(git commit -q --allow-empty -m "test(probe): queue" 2>&1)
+echo "$out" | grep -q "Queue Warning\] 1순위" && bad "1순위 브랜치와 일치하는데 대기열 경고 발생" "$out" || ok "대기열: 설명에 백틱이 여러 개여도 1순위 브랜치명 정확히 추출"
+git checkout -q -- document/todo.md
 git checkout -q --detach
 expect "detached HEAD: 정상 커밋 허용" pass git commit -q --allow-empty -m "test(probe): detached"
 git checkout -q feat/probe

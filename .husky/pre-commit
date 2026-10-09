@@ -112,7 +112,8 @@ if [ -f "$TODO_FILE" ] && [ $IS_MERGE -eq 0 ] && [ "$BRANCH_NAME" != "main" ] &&
         echo "⚠️ [Queue Warning] 완료된 작업([x])이 대기열에 남아 있습니다."
     fi
 
-    FIRST_INCOMPLETE_BRANCH=$(grep -E '^[0-9]+\. \[[ /]\] `[^`]+`' "$TODO_FILE" | head -n 1 | grep -o '`[^`]*`' | sed 's/`//g')
+    # 항목 설명에도 백틱이 있을 수 있으므로 첫 번째 백틱 토큰만 브랜치명으로 사용한다.
+    FIRST_INCOMPLETE_BRANCH=$(grep -E '^[0-9]+\. \[[ /]\] `[^`]+`' "$TODO_FILE" | head -n 1 | grep -o '`[^`]*`' | head -n 1 | sed 's/`//g')
 
     if [ -n "$FIRST_INCOMPLETE_BRANCH" ] && [ "$BRANCH_NAME" != "$FIRST_INCOMPLETE_BRANCH" ]; then
         echo "⚠️ [Queue Warning] 1순위 작업($FIRST_INCOMPLETE_BRANCH)과 현재 브랜치($BRANCH_NAME)가 다릅니다. (경고일 뿐이며 커밋은 계속됩니다)"
