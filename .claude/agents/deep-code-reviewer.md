@@ -16,7 +16,7 @@ tools: Read, Grep, Glob, Bash
 2. **아키텍처 원칙**: Tool Bloat 방지, Smart Name Resolution 일관성, Textile↔Markdown 변환, 기존 모듈 재사용
 3. **TDD 준수**: 실패 케이스·경계값 테스트 존재 여부, 구현 세부사항이 아닌 동작을 검증하는지, 모킹 전략이 ADR-0002와 일치하는지
 4. **유지보수성**: 중복, 불필요한 복잡도, 네이밍, 주변 코드 관례와의 일치
-5. **문서 동기화**: 도구 스펙 변경 시 `document/mcp_tools_spec.md`·DL 갱신, `document/todo.md` 완료 처리
+5. **문서 동기화**: 도구 스펙 변경 시 `document/mcp_tools_spec.md`·DL 갱신. (`document/todo.md`는 서브에이전트 브랜치에서 수정하지 않는 것이 규칙이므로 todo 미갱신을 지적하지 말 것 — DL-0028)
 
 `git diff main...HEAD`로 변경분을 확인하고 `./node_modules/.bin/vitest run`으로 테스트 상태를 확인하십시오.
 

@@ -16,12 +16,14 @@ This skill ensures that the agent rigorously adheres to the Standard Operating P
    `document/sop/vibe_tdd_sop.md`
 
 2. **Execute the SOP:**
-   Follow the 5 steps strictly as defined in the SOP:
+   Follow the steps strictly as defined in the SOP:
    - Step 1: Write the Test (Red)
    - Step 2: Implement (Green)
-   - Step 3: Subagent Review
+   - Step 3: Subagent Review (`deep_code_reviewer` + `security_code_reviewer`)
    - Step 4: Remediation Loop
    - Step 5: Regression Check
+   - Step 6: Completion Report — subagents do NOT edit `document/todo.md`; the main agent marks it `[x]` on main right after merging (DL-0028)
+   - Step 7: Decision Logging (DL/ADR + `document/index.md` sync)
 
 3. **Strict Compliance:**
    - Do not deviate from the commands specified in the SOP (e.g., using `npx vitest run`).

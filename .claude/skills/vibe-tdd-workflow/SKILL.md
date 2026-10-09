@@ -20,7 +20,7 @@ SOP의 Antigravity 도구명은 `CLAUDE.md`의 대응표로 읽는다.
 3. **Review**: `deep-code-reviewer`와 `security-code-reviewer` 서브에이전트를 한 메시지에서 병렬 호출. 변경 파일 경로와 작업 목표를 넘긴다.
 4. **Remediation**: 리뷰 지적 사항은 새 요구사항으로 취급 — 테스트를 먼저 추가한 뒤 수정 (1단계로 회귀).
 5. **Regression**: `./node_modules/.bin/vitest run` 전체 스위트 통과 확인.
-6. **Queue**: `document/todo.md`에서 해당 항목을 `[x]` 처리하고 Done 섹션으로 이동해 함께 커밋.
+6. **Queue**: 서브에이전트(워크트리)는 `document/todo.md`를 수정하지 않고 최종 보고에 결과를 담는다. 메인 세션이 병합 직후 main에서 `[x]` 처리한다.
 7. **Decision Log**: 패키지 추가·설정 변경 → DL, 구조 변경 → ADR. 작성 시 `document/index.md` 동기화.
 
 ## 4. 중단 조건

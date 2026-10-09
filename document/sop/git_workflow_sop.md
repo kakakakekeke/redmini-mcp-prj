@@ -1,7 +1,7 @@
 ---
 title: "협업 및 멀티 에이전트 동시 작업을 위한 Git 워크플로우 SOP"
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-10-09
 version: 1.0
 tags:
   - sop
@@ -61,16 +61,22 @@ tags:
 새로운 코드 작성 및 기능 개발이 필요할 경우, 메인 에이전트는 직접 코드를 수정하지 말고 반드시 `invoke_subagent` 툴을 호출합니다.
 - **필수 인자**: 서브에이전트 호출 시 반드시 `Workspace: "share"` (또는 `"branch"`)로 설정해야 합니다.
 - **시스템 가드레일**: `Workspace`를 생략하거나 `inherit`으로 설정할 경우 훅(`subagent-workspace-enforcer`)에 의해 자동 차단됩니다.
-- 메인 에이전트는 오직 `document/todo.md`, `index.md`, 설계 문서 등만을 조작합니다.
+- 메인 에이전트는 main 저장소에서 `.agents/main_allowlist`에 등록된 경로(현재 `document/*`, `.env`)만 조작합니다. 이 목록은 pre-commit과 편집 훅이 공유하는 단일 기준입니다.
 
 ### 단계 2: 서브에이전트 작업 수행 및 커밋
 - 서브에이전트는 자동으로 구성된 `.worktrees/` 하위 격리 환경에서 코드를 수정하고 단위 테스트를 수행합니다.
-- **TO-DO 완료 동기화**: 작업 완료 후 서브에이전트는 반드시 `document/todo.md`에서 본인의 작업 항목을 대기열에서 완료 목록으로 이동하고 `[x]`로 완료 처리합니다. (누락 금지)
+- **TO-DO는 수정하지 않음**: 서브에이전트는 작업 브랜치에서 `document/todo.md`를 수정하지 않습니다. 완료 처리는 병합 후 메인 에이전트가 수행합니다. (병렬 브랜치 간 충돌 방지, DL-0028)
 - **커밋**: 작업 완료 후 서브에이전트는 해당 격리 환경에서 `git add` 및 `git commit`을 수행합니다.
 
-### 단계 3: 메인 에이전트로의 보고 및 병합 대기
+### 단계 3: 메인 에이전트로의 보고 및 병합
 - 서브에이전트는 자신의 작업을 마무리하고 메인 에이전트에게 결과를 보고(`send_message`)합니다.
-- 수동 Worktree 정리나 삭제는 불필요하며, 시스템이 에이전트 수명주기에 맞춰 Worktree 디렉토리를 자동으로 관리(삭제)합니다.
+- 메인 에이전트는 main 저장소에서 `git merge --no-ff <branch>`로 병합합니다. 커밋 메시지는 `chore(merge): merge branch '<branch>' into main` 형식이며, 병합되는 변경분에 코어 파일이 포함되면 본문에 `[Impact-Reviewed]`가 필요합니다. `--squash` 병합과 main 체크아웃에서의 `cherry-pick`/`revert`/`am`은 훅 검사 구조상 지원하지 않습니다. 병합 커밋도 pre-commit 검사(문서 인덱스·타입·테스트)를 거치며, 충돌 해결 중에는 병합 대상 브랜치가 변경한 파일 외의 파일을 끼워 넣을 수 없습니다.
+- 병합 직후 메인 에이전트가 `document/todo.md`의 해당 항목을 `[x]` 처리하고 Done 섹션으로 이동해 커밋합니다.
+- 시스템이 생성한 Worktree는 에이전트 수명주기에 맞춰 정리됩니다. 수동으로 만든 Worktree는 병합 후 `git worktree remove`로 정리합니다.
+
+### 훅 설치 (Hook Installation)
+- `npm install` 시 `prepare` 스크립트(`.agents/scripts/install_git_hooks.sh`)가 husky를 설치하고 `core.hooksPath`를 **메인 저장소 `.husky/_`의 절대 경로**로 고정합니다. 상대 경로로 두면 워크트리에서 훅이 조용히 생략됩니다.
+- 브랜치에서 수정한 훅 스크립트는 병합 후에 적용됩니다(워크트리 커밋은 항상 main의 훅으로 검사됨).
 
 ## 6. 예외 처리 및 복구 (Exception Handling)
 - **Worktree 삭제 실패**: 수동으로 디렉토리를 삭제한 경우, Git 내부 설정에 찌꺼기가 남습니다. 이 때는 `git worktree prune` 명령어를 사용하여 정리합니다.

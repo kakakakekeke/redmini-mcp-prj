@@ -23,4 +23,9 @@ fi
 # 의존성 재설치 비용을 줄이기 위해 메인 저장소의 node_modules 를 공유한다 (.gitignore 의 `node_modules` 로 무시됨).
 [ -e "$path/node_modules" ] || [ ! -d "$repo/node_modules" ] || ln -s ../../node_modules "$path/node_modules"
 
+# 상대 경로 hooksPath(.husky/_)는 워크트리에서 해석되지 않아 훅이 생략되므로 절대 경로로 복구한다. (DL-0028)
+if [ -f "$repo/.husky/_/h" ] && [ "$(git -C "$repo" config core.hooksPath)" != "$repo/.husky/_" ]; then
+  git -C "$repo" config core.hooksPath "$repo/.husky/_" >&2
+fi
+
 echo "$path"

@@ -1,0 +1,9 @@
+# main 저장소(워크트리가 아닌 체크아웃)에서 직접 편집·커밋할 수 있는 경로 목록.
+# 이 파일이 단일 기준이며 다음 세 곳이 함께 읽는다 (DL-0028):
+#   - .husky/pre-commit                      (커밋 시점)
+#   - .agents/scripts/enforce_worktree.sh    (Antigravity 편집 훅)
+#   - .claude/hooks/enforce_worktree.sh      (Claude Code 편집 훅)
+# 한 줄에 glob 패턴 하나. '*'는 '/'도 매칭한다. '#' 주석과 빈 줄은 무시.
+# 가드레일 자체(.husky/, .agents/, .claude/, AGENTS.md, CLAUDE.md)는 절대 추가하지 말 것.
+document/*
+.env

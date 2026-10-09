@@ -1,35 +1,70 @@
 #!/bin/sh
-# Git pre-commit hook to enforce branch protection, document index, and tests.
+# Git pre-commit hook: main 허용 경로, 문서 인덱스, 타입 검사, 단위 테스트, 대기열 경고.
+# 병합 커밋도 예외 없이 동일하게 검사한다 (충돌 없는 병합은 .husky/pre-merge-commit 이 이 스크립트를 호출). (DL-0028)
 
 GIT_DIR=$(git rev-parse --git-dir)
 GIT_COMMON_DIR=$(git rev-parse --git-common-dir)
+BRANCH_NAME=$(git symbolic-ref --short HEAD 2>/dev/null || true)   # detached HEAD 허용
+# 스테이징 목록: 이름 변경을 삭제+추가로 분해(--no-renames)해 원래 경로도 검사하고,
+# 비ASCII(한글) 경로가 따옴표·이스케이프 없이 출력되도록 quotePath 를 끈다.
+staged_files() { git -c core.quotePath=false diff --cached --name-only --no-renames; }
 
-# 0. Merge Commit 허용 로직
-if [ -f "$GIT_DIR/MERGE_HEAD" ]; then
-    echo "✅ Merge Commit이 감지되어 가드레일 검사를 건너뜁니다."
-    exit 0
+# IS_MERGE: 1 = 충돌 해결 후 `git commit` 으로 마무리하는 병합 (MERGE_HEAD 존재, 사용자가 스테이징 가능)
+#           2 = 충돌 없는 자동 병합 (pre-merge-commit 경유, 스테이징 내용 = 병합 결과)
+# 2 는 위치 인자로만 판정한다. git 은 pre-commit 에 인자를 넘기지 않으므로 환경변수와 달리 위조할 수 없다.
+IS_MERGE=0
+[ -f "$GIT_DIR/MERGE_HEAD" ] && IS_MERGE=1
+[ "${1:-}" = "--from-pre-merge-commit" ] && IS_MERGE=2
+
+# 0. 비밀값 파일(.env) 커밋 차단 — 모든 체크아웃 공통 (.env.example 제외)
+ENV_FILES=$(staged_files | grep -E '(^|/)\.env(\..+)?$' | grep -Ev '(^|/)\.env\.example$' || true)
+if [ -n "$ENV_FILES" ]; then
+    echo "❌ [Error] .env 계열 비밀값 파일은 커밋할 수 없습니다:"
+    printf '%s\n' "$ENV_FILES" | sed 's/^/   - /'
+    exit 1
 fi
 
 # 1. 메인 저장소(Main Repository) 가드레일
-if [ "$GIT_DIR" = "$GIT_COMMON_DIR" ]; then
-    STAGED_FILES=$(git diff --cached --name-only)
-    for FILE in $STAGED_FILES; do
-        case "$FILE" in
-            document/todo.md | document/index.md | document/*.md | document/decision_log/* | document/adr/* | document/sop/* | document/templates/* | .env | .husky/*)
-                # 화이트리스트 패스
-                ;;
-            *)
-                echo "❌ [Error] 메인 저장소에서는 문서(todo.md, index.md, DL, ADR 등) 및 .env 외의 개발 코드나 스크립트($FILE)를 직접 커밋할 수 없습니다."
-                echo "반드시 서브에이전트(Workspace: share) 환경이나 'git worktree add'를 통해 작업하세요."
-                exit 1
-                ;;
-        esac
-    done
+#    허용 경로는 .agents/main_allowlist 단일 파일에서 읽되, 작업 트리가 아니라 **HEAD 에 커밋된 버전**을
+#    사용한다 (스테이징하지 않은 정책 수정으로 우회하는 것을 차단).
+#    병합 커밋은 병합 대상 브랜치가 변경한 파일만 추가로 허용한다 (병합 중 파일 끼워넣기 차단).
+if [ "$GIT_DIR" = "$GIT_COMMON_DIR" ] && [ $IS_MERGE -ne 2 ]; then
+    POLICY_DIR=$(mktemp -d)
+    trap 'rm -rf "$POLICY_DIR"' EXIT
+    if ! git show HEAD:.agents/main_allowlist > "$POLICY_DIR/main_allowlist" 2>/dev/null \
+       || ! git show HEAD:.agents/scripts/main_allowlist.sh > "$POLICY_DIR/main_allowlist.sh" 2>/dev/null; then
+        echo "❌ [Error] HEAD 에 main_allowlist 정책 파일(.agents/main_allowlist, .agents/scripts/main_allowlist.sh)이 없습니다."
+        exit 1
+    fi
+    MAIN_ALLOWLIST_FILE="$POLICY_DIR/main_allowlist"
+    . "$POLICY_DIR/main_allowlist.sh"
+
+    MERGE_FILES=""
+    if [ $IS_MERGE -eq 1 ]; then
+        MERGE_FILES=$(git -c core.quotePath=false diff --name-only --no-renames HEAD...MERGE_HEAD)
+    fi
+
+    BLOCKED=$(staged_files | while IFS= read -r FILE; do
+        is_main_allowed "$FILE" && continue
+        if [ $IS_MERGE -eq 1 ] && printf '%s\n' "$MERGE_FILES" | grep -Fxq -- "$FILE"; then
+            continue
+        fi
+        echo "$FILE"
+    done)
+
+    if [ -n "$BLOCKED" ]; then
+        if [ $IS_MERGE -eq 1 ]; then
+            echo "❌ [Error] 병합 커밋에 병합 대상 브랜치가 변경하지 않은 파일이 포함되어 있습니다:"
+        else
+            echo "❌ [Error] 메인 저장소에서는 .agents/main_allowlist 에 등록된 경로(문서, .env)만 직접 커밋할 수 있습니다:"
+        fi
+        printf '%s\n' "$BLOCKED" | sed 's/^/   - /'
+        echo "반드시 워크트리(.worktrees/)에서 작업한 뒤 병합하세요."
+        exit 1
+    fi
 fi
 
-BRANCH_NAME=$(git symbolic-ref --short HEAD 2>/dev/null)
-
-# 2. Run document/index.md check (기존 로직 유지)
+# 2. document/index.md 동기화 검사
 if [ -f ".agents/scripts/enforce_document_index.sh" ]; then
     OUTPUT=$(.agents/scripts/enforce_document_index.sh << 'INPUT'
 {"terminationReason": "model_stop"}
@@ -42,28 +77,45 @@ INPUT
     fi
 fi
 
-# 3. Unit test enforcement
-if grep -q '"test":' package.json; then
-    echo "🧪 단위 테스트를 실행합니다..."
-    npm test > /dev/null
-    if [ $? -ne 0 ]; then
-        echo "❌ [Error] 단위 테스트가 실패했습니다. 테스트 실패 원인을 분석하고 코드를 수정한 후 커밋하세요."
-        exit 1
-    fi
+# 3. TypeScript 타입 검사 (vitest 는 타입 에러를 잡지 않는다). 설정 파일을 지워 건너뛰는 것을 막기 위해 fail-closed.
+if [ ! -f tsconfig.json ]; then
+    echo "❌ [Error] tsconfig.json 이 없어 타입 검사를 수행할 수 없습니다."
+    exit 1
+fi
+if [ ! -x node_modules/.bin/tsc ]; then
+    echo "❌ [Error] node_modules/.bin/tsc 가 없습니다. 'npm install' 후 다시 커밋하세요."
+    exit 1
+fi
+echo "🔎 타입 검사(tsc --noEmit)를 실행합니다..."
+if ! TSC_OUT=$(node_modules/.bin/tsc --noEmit 2>&1); then
+    echo "❌ [Error] 타입 검사에 실패했습니다:"
+    echo "$TSC_OUT" | grep 'error TS' | head -20
+    exit 1
 fi
 
-# 4. Queue-driven Development Enforcement (todo.md) - 완화됨 (Warning only)
+# 4. 단위 테스트 (test 스크립트가 없으면 fail-closed)
+if ! grep -q '"test":' package.json; then
+    echo "❌ [Error] package.json 에 test 스크립트가 없어 단위 테스트를 수행할 수 없습니다."
+    exit 1
+fi
+echo "🧪 단위 테스트를 실행합니다..."
+if ! npm test > /dev/null; then
+    echo "❌ [Error] 단위 테스트가 실패했습니다. 테스트 실패 원인을 분석하고 코드를 수정한 후 커밋하세요."
+    exit 1
+fi
+
+# 5. 대기열(todo.md) 경고 — 차단하지 않음 (DL-0002)
 TODO_FILE="document/todo.md"
-if [ -f "$TODO_FILE" ] && [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "master" ]; then
+if [ -f "$TODO_FILE" ] && [ $IS_MERGE -eq 0 ] && [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "master" ]; then
 
     if grep -Eq '^[0-9]+\. \[x\]' "$TODO_FILE"; then
         echo "⚠️ [Queue Warning] 완료된 작업([x])이 대기열에 남아 있습니다."
     fi
 
     FIRST_INCOMPLETE_BRANCH=$(grep -E '^[0-9]+\. \[[ /]\] `[^`]+`' "$TODO_FILE" | head -n 1 | grep -o '`[^`]*`' | sed 's/`//g')
-    
+
     if [ -n "$FIRST_INCOMPLETE_BRANCH" ] && [ "$BRANCH_NAME" != "$FIRST_INCOMPLETE_BRANCH" ]; then
-        echo "⚠️ [Queue Warning] 1순위 작업과 현재 브랜치가 다릅니다."
+        echo "⚠️ [Queue Warning] 1순위 작업($FIRST_INCOMPLETE_BRANCH)과 현재 브랜치($BRANCH_NAME)가 다릅니다. (경고일 뿐이며 커밋은 계속됩니다)"
     fi
 fi
 
