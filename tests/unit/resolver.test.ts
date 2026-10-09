@@ -131,4 +131,201 @@ describe('SmartNameResolver', () => {
       expect(client.getProjects).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe("Saved queries (resolveSavedQuery)", () => {
+    const queries = [
+      { id: 1, name: "내 미해결 결함", is_public: false },
+      { id: 2, name: "릴리스 점검", is_public: true, project_id: 10 },
+      { id: 3, name: "릴리스 점검", is_public: true, project_id: 20 },
+      { id: 4, name: "주간 보고", is_public: true },
+      { id: 5, name: "주간 보고", is_public: true, project_id: 10 },
+      { id: 6, name: "중복 전역", is_public: true },
+      { id: 7, name: "중복 전역", is_public: false },
+    ];
+
+    beforeEach(() => {
+      (client as any).getAllQueries = vi.fn().mockResolvedValue({ queries, total_count: queries.length, truncated: false });
+    });
+
+    it("should not fetch saved queries in load() (lazy, separate cache)", async () => {
+      await resolver.load();
+      expect((client as any).getAllQueries).not.toHaveBeenCalled();
+    });
+
+    it("should cache saved queries within TTL and refetch on force or clearCache", async () => {
+      await resolver.loadSavedQueries();
+      await resolver.loadSavedQueries();
+      expect((client as any).getAllQueries).toHaveBeenCalledTimes(1);
+
+      await resolver.loadSavedQueries(true);
+      expect((client as any).getAllQueries).toHaveBeenCalledTimes(2);
+
+      resolver.clearCache();
+      await resolver.loadSavedQueries();
+      expect((client as any).getAllQueries).toHaveBeenCalledTimes(3);
+    });
+
+    it("should refetch saved queries after TTL expires", async () => {
+      const shortTtlResolver = new SmartNameResolver(client, 50);
+      await shortTtlResolver.loadSavedQueries();
+      await new Promise((r) => setTimeout(r, 60));
+      await shortTtlResolver.loadSavedQueries();
+      expect((client as any).getAllQueries).toHaveBeenCalledTimes(2);
+    });
+
+    it("should propagate fetch errors from loadSavedQueries", async () => {
+      (client as any).getAllQueries = vi.fn().mockRejectedValue(new Error("403 Forbidden"));
+      await expect(resolver.loadSavedQueries()).rejects.toThrow("403 Forbidden");
+    });
+
+    it("should resolve a unique name case-insensitively with trimming", async () => {
+      (client as any).getAllQueries = vi.fn().mockResolvedValue({
+        queries: [{ id: 9, name: "Open Bugs" }],
+        total_count: 1,
+        truncated: false,
+      });
+      await resolver.loadSavedQueries();
+      const r = resolver.resolveSavedQuery("  open bugs ");
+      expect(r).toEqual({ status: "resolved", query: { id: 9, name: "Open Bugs", is_public: undefined, project_id: undefined } });
+    });
+
+    it("should resolve Korean names regardless of Unicode normalization form (NFC/NFD)", async () => {
+      await resolver.loadSavedQueries();
+      const nfd = "내 미해결 결함".normalize("NFD");
+      const r = resolver.resolveSavedQuery(nfd);
+      expect(r.status).toBe("resolved");
+      if (r.status === "resolved") expect(r.query.id).toBe(1);
+    });
+
+    it("should return not_found without unrelated candidates when nothing is similar", async () => {
+      await resolver.loadSavedQueries();
+      const r = resolver.resolveSavedQuery("없는 필터");
+      expect(r.status).toBe("not_found");
+      expect(r.candidates).toEqual([]);
+    });
+
+    it("should return only partial matches as not_found candidates", async () => {
+      await resolver.loadSavedQueries();
+      const r = resolver.resolveSavedQuery("보고");
+      expect(r.status).toBe("not_found");
+      expect(r.candidates.map((q) => q.id)).toEqual([4, 5]);
+    });
+
+    it("should resolve a single project-specific match when no project is given (caller scopes the request)", async () => {
+      (client as any).getAllQueries = vi.fn().mockResolvedValue({
+        queries: [{ id: 2, name: "릴리스 점검", project_id: 10 }],
+        total_count: 1,
+        truncated: false,
+      });
+      await resolver.loadSavedQueries();
+      const r = resolver.resolveSavedQuery("릴리스 점검");
+      expect(r.status).toBe("resolved");
+      if (r.status === "resolved") expect(r.query.project_id).toBe(10);
+    });
+
+    it("should report other_project when the only match belongs to a different project (Redmine would 404)", async () => {
+      (client as any).getAllQueries = vi.fn().mockResolvedValue({
+        queries: [{ id: 2, name: "릴리스 점검", project_id: 10 }],
+        total_count: 1,
+        truncated: false,
+      });
+      await resolver.loadSavedQueries();
+      const r = resolver.resolveSavedQuery("릴리스 점검", 20);
+      expect(r.status).toBe("other_project");
+      expect(r.candidates.map((q) => q.id)).toEqual([2]);
+    });
+
+    it("should match names ignoring invisible format characters", async () => {
+      (client as any).getAllQueries = vi.fn().mockResolvedValue({
+        queries: [{ id: 3, name: `주간${String.fromCharCode(0x200b)} 보고` }],
+        total_count: 1,
+        truncated: false,
+      });
+      await resolver.loadSavedQueries();
+      expect(resolver.resolveSavedQuery("주간 보고").status).toBe("resolved");
+    });
+
+    it("should de-duplicate saved queries by id (pages shifting between requests)", async () => {
+      (client as any).getAllQueries = vi.fn().mockResolvedValue({
+        queries: [{ id: 3, name: "dup" }, { id: 3, name: "dup" }],
+        total_count: 2,
+        truncated: false,
+      });
+      await resolver.loadSavedQueries();
+      expect(resolver.resolveSavedQuery("dup").status).toBe("resolved");
+      expect(resolver.getSavedQueries()).toHaveLength(1);
+    });
+
+    it("should prefer the query of the given project when the name is duplicated", async () => {
+      await resolver.loadSavedQueries();
+      const r = resolver.resolveSavedQuery("릴리스 점검", 20);
+      expect(r.status).toBe("resolved");
+      if (r.status === "resolved") expect(r.query.id).toBe(3);
+    });
+
+    it("should fall back to the global query when no project-specific match exists", async () => {
+      await resolver.loadSavedQueries();
+      const r = resolver.resolveSavedQuery("주간 보고", 99);
+      expect(r.status).toBe("resolved");
+      if (r.status === "resolved") expect(r.query.id).toBe(4);
+    });
+
+    it("should prefer the global query when no project is given", async () => {
+      await resolver.loadSavedQueries();
+      const r = resolver.resolveSavedQuery("주간 보고");
+      expect(r.status).toBe("resolved");
+      if (r.status === "resolved") expect(r.query.id).toBe(4);
+    });
+
+    it("should return ambiguous when duplicates exist only in other projects", async () => {
+      await resolver.loadSavedQueries();
+      const r = resolver.resolveSavedQuery("릴리스 점검");
+      expect(r.status).toBe("ambiguous");
+      expect(r.candidates.map((q) => q.id)).toEqual([2, 3]);
+
+      const r2 = resolver.resolveSavedQuery("릴리스 점검", 99);
+      expect(r2.status).toBe("other_project");
+      expect(r2.candidates.map((q) => q.id)).toEqual([2, 3]);
+    });
+
+    it("should return ambiguous when several global queries share the name", async () => {
+      await resolver.loadSavedQueries();
+      const r = resolver.resolveSavedQuery("중복 전역", 10);
+      expect(r.status).toBe("ambiguous");
+      expect(r.candidates.map((q) => q.id)).toEqual([6, 7]);
+    });
+
+    it("should ignore malformed entries returned by the API", async () => {
+      (client as any).getAllQueries = vi.fn().mockResolvedValue({
+        queries: [
+          null,
+          { id: "x", name: "bad id" },
+          { id: -1, name: "negative" },
+          { id: 11, name: 123 },
+          { id: 12, name: "__proto__" },
+          { id: 13, name: "valid", project_id: "oops" },
+        ],
+        total_count: 6,
+        truncated: false,
+      });
+      await resolver.loadSavedQueries();
+      expect(resolver.resolveSavedQuery("bad id").status).toBe("not_found");
+      const proto = resolver.resolveSavedQuery("__proto__");
+      expect(proto.status).toBe("resolved");
+      const valid = resolver.resolveSavedQuery("valid");
+      expect(valid).toEqual({ status: "resolved", query: { id: 13, name: "valid", is_public: undefined, project_id: undefined } });
+    });
+
+    it("should expose whether the saved query list was truncated", async () => {
+      (client as any).getAllQueries = vi.fn().mockResolvedValue({ queries: [], total_count: 0, truncated: true });
+      await resolver.loadSavedQueries();
+      expect(resolver.savedQueriesTruncated).toBe(true);
+      expect(resolver.getSavedQueries()).toEqual([]);
+    });
+
+    it("should return not_found for empty input", async () => {
+      await resolver.loadSavedQueries();
+      expect(resolver.resolveSavedQuery("   ").status).toBe("not_found");
+    });
+  });
 });

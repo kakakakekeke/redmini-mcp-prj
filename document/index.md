@@ -78,6 +78,7 @@ related:
 | **[[DL-0029-agent-rules-cleanup|document/decision_log/DL-0029-agent-rules-cleanup.md]]** | `DL`, `TDD`, `리뷰등급`, `R0`, `R1`, `R2`, `커버리지`, `coverage`, `frontmatter`, `브랜치네이밍`, `AGENTS.md` | • 리뷰어 호출 범위(R0~R2) 판단 시<br>• 커버리지 기준선·frontmatter 검사·브랜치 네이밍 규칙 확인 시 | DL-0029: 낡은 규칙 정리(도구 원칙, dry_run, 브랜치 네이밍, 인덱스 검사) 및 TDD 효율화(리뷰 등급화, 커버리지 래칫, 테스트 누락 경고, DL 조건 축소) |
 | **[[DL-0030-guardrail-polish|document/decision_log/DL-0030-guardrail-polish.md]]** | `DL`, `가드레일`, `shellcheck`, `.shellcheckrc`, `guard_bash`, `hooksPath`, `commit-msg`, `Broken pipe` | • 셸 스크립트(`*.sh`, `.husky/`) 커밋이 shellcheck 로 차단되었을 때<br>• Bash 가드의 hooksPath 차단 범위를 확인할 때 | DL-0030: commit-msg Broken pipe 제거, Bash 가드를 hooksPath 쓰기만 차단하도록 축소, pre-commit shellcheck(스테이징 내용 기준, 미설치 시 경고) 도입 |
 | **[[0005-test-architecture-revision|document/adr/0005-test-architecture-revision.md]]** | `ADR`, `테스트`, `아키텍처`, `tests/tools`, `e2e`, `스텁`, `커버리지`, `기준선` | • 테스트 파일 위치·모킹 방식 결정 시<br>• 커버리지 기준선 조정 시 | ADR-0005: ADR-0002 대체 — 실제 테스트 구조(DI 스텁, Express 모의 서버) 공식화 및 커버리지 기준선 도입 |
+| **[[DL-0031-saved-queries|document/decision_log/DL-0031-saved-queries.md]]** | `DL`, `저장된필터`, `saved_query`, `queries`, `query_id`, `list_saved_queries`, `search_issues`, `모호성` | • 저장된 필터(Queries) 이름으로 일감 검색·필터 목록 조회 시<br>• 같은 이름 필터의 우선순위(프로젝트 → 전역) 규칙 확인 시 | DL-0031: 새 도구 없이 `search_issues`에 `saved_query`(이름→query_id)·`list_saved_queries` 추가, 리졸버 지연 TTL 캐시, 후보 에러의 주입 탐지 |
 
 
 ---
