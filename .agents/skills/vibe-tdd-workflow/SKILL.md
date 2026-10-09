@@ -13,7 +13,7 @@ This skill ensures that the agent rigorously adheres to the Standard Operating P
 
 1. **Read the SOP Document:**
    Before beginning any implementation or TDD cycle, you MUST read the exact procedure defined in the SOP document using the `view_file` tool:
-   `document/vibe_tdd_sop.md`
+   `document/sop/vibe_tdd_sop.md`
 
 2. **Execute the SOP:**
    Follow the 5 steps strictly as defined in the SOP:

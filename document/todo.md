@@ -1,7 +1,7 @@
 ---
 title: "프로젝트 할 일 및 진행 현황 (TO-DO)"
 created: 2026-09-19
-updated: 2026-09-21
+updated: 2026-10-09
 tags:
   - todo
   - tracker
@@ -27,6 +27,7 @@ tags:
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
 
 ## ✅ 완료된 작업 (Done)
+- [x] `chore/claude-code-support` : Claude Code 에이전트 환경 병행 지원 — `CLAUDE.md`, `.claude/` 훅(워크트리 편집 가드·서브에이전트 격리·타입체크·문서 인덱스·`.worktrees/` 워크트리 생성), 스킬 2종, 리뷰어 서브에이전트 2종, `.mcp.json` — [[DL-0027-claude-code-support]]
 - [x] `fix/security-get-projects-hardening` : get_projects 경로 조작 방어, 리졸버 캐시 보존 및 404/403 예외 처리 강화 — [[DL-0026-get-projects-security-hardening]]
 - [x] `fix/security-auth-hardening` : 인증 미들웨어 공백 키 우회 방어, 타이밍 공격 방어(timingSafeEqual), 401 JSON 에러 핸들러 도입 — [[DL-0024-disable-http-server-key-fallback]]
 - [x] `feature/get-project-custom-fields` : `get_projects` 도구에 `project_id` 파라미터 추가 및 특정 프로젝트의 일감 커스텀 필드(`issue_custom_fields`) 조회 지원 — [[DL-0025-project-custom-fields-support]]

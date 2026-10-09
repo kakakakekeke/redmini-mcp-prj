@@ -1,7 +1,7 @@
 ---
 title: Redmine MCP 프로젝트 문서 인덱스 (Agent Document Registry)
 created: 2026-09-18
-updated: 2026-09-21
+updated: 2026-10-09
 tags:
   - index
   - moc
@@ -71,6 +71,7 @@ status: active
 | **[[DL-0024-disable-http-server-key-fallback|document/decision_log/DL-0024-disable-http-server-key-fallback.md]]** | `DL`, `보안`, `인증`, `auth`, `http`, `fallback`, `REDMINE_API_KEY`, `대리인취약점` | • HTTP 모드 API 키 폴백 차단 정책 및 사유 확인 시<br>• Stdio 전용 서버 키 사용 정책 참조 시 | DL-0024: HTTP 모드 REDMINE_API_KEY 서버 키 폴백 완전 차단 |
 | **[[DL-0025-project-custom-fields-support|document/decision_log/DL-0025-project-custom-fields-support.md]]** | `DL`, `커스텀필드`, `custom_fields`, `get_projects`, `project_id`, `issue_custom_fields` | • get_projects 도구의 project_id 파라미터 확장 사양 확인 시<br>• 일반 사용자 권한의 일감 커스텀 필드 조회 정책 참조 시 | DL-0025: get_projects 도구 확장 및 프로젝트별 일감 커스텀 필드(issue_custom_fields) 조회 지원 |
 | **[[DL-0026-get-projects-security-hardening|document/decision_log/DL-0026-get-projects-security-hardening.md]]** | `DL`, `보안`, `경로조작`, `path-traversal`, `get_projects`, `인코딩`, `리졸버캐시` | • get_projects 도구 경로 조작 방어 및 404/403 예외 처리 확인 시<br>• SmartNameResolver 인스턴스 TTL 캐시 보존 정책 참조 시 | DL-0026: get_projects 도구 및 getProject API 보안 강화 (경로 조작 방어, 리졸버 캐시 보존, 예외 복원력) |
+| **[[DL-0027-claude-code-support|document/decision_log/DL-0027-claude-code-support.md]]** | `DL`, `claude-code`, `훅`, `hooks`, `worktree`, `서브에이전트`, `CLAUDE.md`, `antigravity` | • Claude Code에서 작업하거나 `.claude/` 훅·스킬·서브에이전트를 수정할 때<br>• Antigravity ↔ Claude Code 가드레일 대응 관계 확인 시 | DL-0027: Antigravity 설정을 유지한 채 Claude Code 훅·스킬·리뷰어 에이전트 레이어 병행 도입 |
 
 
 ---
@@ -85,7 +86,8 @@ status: active
 
 ## 3. 인덱스 동기화 강제 훅 (Enforcement Hook)
 
-* **훅 설정**: `.agents/hooks.json` → `.agents/scripts/enforce_document_index.sh`
+* **훅 설정 (Antigravity)**: `.agents/hooks.json` → `.agents/scripts/enforce_document_index.sh`
+* **훅 설정 (Claude Code)**: `.claude/settings.json` (Stop/SubagentStop) → `.claude/hooks/enforce_document_index.sh` (동일 판정 로직 재사용, `decision: "block"` 반환)
 * **동작 규칙**: `document/` 폴더 내에 `.md` 파일이 추가되거나 삭제되었을 때 위 색인표에 반영하지 않고 작업을 종료하려 하면, 훅이 `decision: "continue"`를 반환하여 작업 종료를 자동 차단합니다.
 
 ---
