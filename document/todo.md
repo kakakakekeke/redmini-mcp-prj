@@ -26,12 +26,13 @@ related:
 * (현재 등록된 모든 P1 작업이 완료되었습니다.)
 
 ### ⚠️ P2 — 단기 조치 (보안 감사 기반, 1-2주)
-1. [ ] `chore/guardrail-polish` : commit-msg `Broken pipe` 출력 잡음 제거, Bash 가드의 훅 경로 설정 조회 명령 오탐(명령 문자열 전체 매칭) 수정, shellcheck 정적 분석 도입
+* (현재 등록된 모든 P2 작업이 완료되었습니다.)
 
 ### 📌 P3 — 중기 조치 (보안 감사 기반, 1개월)
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
 
 ## ✅ 완료된 작업 (Done)
+- [x] `chore/guardrail-polish` : commit-msg `Broken pipe` 출력 잡음 제거, Bash 가드의 훅 경로 설정 조회 명령 오탐(명령 문자열 전체 매칭) 수정, shellcheck 정적 분석 도입 — [[DL-0030-guardrail-polish]]
 - [x] `fix/e2e-dynamic-port` : E2E 테스트 고정 포트(33333)·고정 대기(2초) 제거 — 동적 포트 + `/health` 폴링으로 연속·동시 `npm test` 간헐 실패 해소 (pre-commit·병합이 `npm test`에 의존) — [[DL-0029-agent-rules-cleanup]] 후속
 - [x] `chore/agent-rules-cleanup` : 낡은 규칙 정리(AGENTS.md 도구 원칙, ADR-0002 대체, 템플릿·frontmatter, 브랜치 네이밍, 문서 인덱스 검사 강화) 및 TDD 효율 개선(리뷰 등급화, 커버리지 기준선, 테스트 누락 경고, DL 작성 조건 축소) — [[DL-0029-agent-rules-cleanup]], [[0005-test-architecture-revision]]
 - [x] `chore/agent-rules-hardening` : 에이전트 가드레일 구멍 보완 — 병합 커밋 검사 우회 차단, `.husky` 자기수정 차단, pre-commit `tsc` 추가, main 허용 경로 단일화, todo.md 소유권(메인 세션 전담) 정리 및 SOP 상충 해소 — [[DL-0028-agent-rules-hardening]]
