@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "redmine": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "src/index.ts"],
+      "env": {
+        "REDMINE_URL": "${REDMINE_URL:-http://localhost:3000/}",
+        "REDMINE_API_KEY": "${REDMINE_API_KEY}",
+        "TRANSPORT": "stdio"
+      }
+    }
+  }
+}

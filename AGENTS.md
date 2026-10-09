@@ -2,6 +2,9 @@
 
 이 문서는 **Redmine MCP 서버 프로젝트**에 참여하는 모든 AI 코딩 에이전트(Antigravity, Claude, Cursor 등)가 반드시 준수해야 하는 작업 지침 및 프로젝트 규약입니다.
 
+> [!tip] 에이전트별 설정 위치
+> 본문의 도구명(`view_file`, `invoke_subagent` 등)과 훅 경로(`.agents/`)는 Antigravity 기준입니다. **Claude Code**는 `CLAUDE.md`의 대응표와 `.claude/` 설정(훅·스킬·서브에이전트)을 따르며, 두 환경의 가드레일 규칙은 동일합니다. (배경: `document/decision_log/DL-0027-claude-code-support.md`)
+
 ---
 
 ## 1. 프로젝트 핵심 문서 및 인덱스 파일 (`document/index.md`)
