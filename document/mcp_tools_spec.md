@@ -1,7 +1,7 @@
 ---
 title: MCP 도구(Tool) 명세서 (MVP - 조회 전용)
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-10-09
 tags:
   - mcp
   - tools
@@ -112,6 +112,9 @@ LLM(Claude/Cursor)이 불필요하게 많은 도구를 가지지 않도록(Tool 
 
 *   **Parameters:**
     *   `include_archived` (boolean, optional): 보관된 프로젝트 포함 여부 (기본: false).
+    *   `project_id` (string | integer, optional): 지정 시 단일 프로젝트 상세(트래커, 커스텀 필드 등)를 조회. 경로 조작 문자(`/`, `\`, `..`) 거부.
+    *   `include` (array, optional, `project_id` 필수): `"memberships"` — 멤버(사용자/그룹 id·이름)와 역할, 최대 1,000건(초과 시 `memberships_truncated`). `"issue_categories"` — 범주와 기본 담당자. 섹션별 403/404 는 `<section>_error` 로 반환. ([[DL-0033-project-memberships-categories|DL-0033]])
+    *   관련: `create_issue` 의 `category`(이름) 파라미터는 이 목록 기준으로 `category_id` 로 변환됩니다.
 
 ---
 
