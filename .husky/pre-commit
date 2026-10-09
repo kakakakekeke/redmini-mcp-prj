@@ -37,6 +37,7 @@ if [ "$GIT_DIR" = "$GIT_COMMON_DIR" ] && [ $IS_MERGE -ne 2 ]; then
         exit 1
     fi
     MAIN_ALLOWLIST_FILE="$POLICY_DIR/main_allowlist"
+    # shellcheck source=../.agents/scripts/main_allowlist.sh
     . "$POLICY_DIR/main_allowlist.sh"
 
     MERGE_FILES=""
@@ -46,7 +47,8 @@ if [ "$GIT_DIR" = "$GIT_COMMON_DIR" ] && [ $IS_MERGE -ne 2 ]; then
 
     BLOCKED=$(staged_files | while IFS= read -r FILE; do
         is_main_allowed "$FILE" && continue
-        if [ $IS_MERGE -eq 1 ] && printf '%s\n' "$MERGE_FILES" | grep -Fxq -- "$FILE"; then
+        # grep -q 는 첫 일치에서 파이프를 닫아 큰 목록에서 printf 가 Broken pipe 를 낼 수 있으므로 끝까지 읽는다
+        if [ $IS_MERGE -eq 1 ] && printf '%s\n' "$MERGE_FILES" | grep -Fx -- "$FILE" >/dev/null; then
             continue
         fi
         echo "$FILE"
@@ -84,6 +86,43 @@ if [ -n "$FM_ERRORS" ]; then
     printf '%s\n' "$FM_ERRORS" | sed 's/^/   - /'
     echo "document/templates/ 의 템플릿을 참고해 frontmatter 를 보완하세요."
     exit 1
+fi
+
+# 1-2. 셸 스크립트 정적 분석 (DL-0030) — 이번 커밋에서 추가·수정된 *.sh 와 .husky/ 훅(.husky/_ 제외)
+#      작업 트리가 아니라 스테이징된 내용을 임시 디렉터리에 꺼내 검사한다. source 대상(lib.sh 등)도 분석되도록
+#      추적 중인 모든 *.sh 와 .shellcheckrc 를 함께 꺼낸다. shellcheck 가 없는 환경에서는 경고 후 계속한다.
+SH_FILES=$(git -c core.quotePath=false diff --cached --name-only --no-renames --diff-filter=AM | grep -E '\.sh$|^\.husky/' | grep -v '^\.husky/_/' || true)
+if [ -n "$SH_FILES" ]; then
+    if ! command -v shellcheck >/dev/null 2>&1; then
+        echo "⚠️ [ShellCheck Warning] shellcheck 가 설치되어 있지 않아 셸 스크립트 정적 분석을 건너뜁니다. (설치: brew install shellcheck / apt install shellcheck)"
+    else
+        echo "🔎 셸 스크립트 정적 분석(shellcheck)을 실행합니다..."
+        SC_DIR=$(mktemp -d) || { echo "❌ [Error] shellcheck 검사용 임시 디렉터리를 만들지 못했습니다."; exit 1; }
+        trap 'rm -rf "${POLICY_DIR:-}" "$SC_DIR"' EXIT   # 1단계의 POLICY_DIR 정리도 유지
+        trap 'exit 1' INT TERM                           # 중단 시에도 EXIT 트랩으로 정리
+        if ! { git -c core.quotePath=false ls-files -- '*.sh' .shellcheckrc; printf '%s\n' "$SH_FILES"; } | sort -u \
+             | git checkout-index --prefix="$SC_DIR/" --stdin; then
+            rm -rf "$SC_DIR"
+            echo "❌ [Error] shellcheck 검사용 스테이징 파일을 꺼내지 못했습니다."
+            exit 1
+        fi
+        # 출력이 비어 있어야 통과하므로, 서브셸 안의 어떤 실패도 메시지를 남겨 차단되게 한다 (fail-closed)
+        SC_OUT=$(cd "$SC_DIR" || { echo "임시 디렉터리로 이동하지 못했습니다: $SC_DIR"; exit 0; }
+            while IFS= read -r F; do
+                # .husky/ 의 셸이 아닌 파일(README 등, shebang 없음)은 건너뛴다. *.sh 는 shebang 이 없어도 검사(SC2148).
+                case "$F" in (*.sh) ;; (*) [ "$(head -c 2 -- "$F")" = '#!' ] || continue ;; esac
+                shellcheck -x -f gcc -- "$F" 2>&1 || echo "$F: shellcheck 실패 (rc=$?)"
+            done <<EOF
+$SH_FILES
+EOF
+        )
+        rm -rf "$SC_DIR"
+        if [ -n "$SC_OUT" ]; then
+            echo "❌ [Error] shellcheck 정적 분석에 실패했습니다. 지적된 문제를 수정하세요 (의도된 경우에만 '# shellcheck disable=SCxxxx # 이유'):"
+            printf '%s\n' "$SC_OUT" | sed -n '1,40s/^/   /p'
+            exit 1
+        fi
+    fi
 fi
 
 # 2. document/index.md 동기화 검사
@@ -151,7 +190,7 @@ fi
 if [ $IS_MERGE -eq 0 ]; then
     STAGED=$(staged_files)
     SRC_CHANGED=$(git -c core.quotePath=false diff --cached --name-only --no-renames --diff-filter=AM -- 'src/*.ts' 'src/*.mts' | grep -v '\.d\.ts$' || true)
-    if [ -n "$SRC_CHANGED" ] && ! printf '%s\n' "$STAGED" | grep -Eq '\.(test|spec)\.m?ts$'; then
+    if [ -n "$SRC_CHANGED" ] && ! printf '%s\n' "$STAGED" | grep -E '\.(test|spec)\.m?ts$' >/dev/null; then
         echo "⚠️ [Test Warning] src/ 가 변경되었지만 테스트 변경이 없습니다. TDD 1단계(실패하는 테스트 먼저)를 건너뛰지 않았는지 확인하세요. (순수 리팩터링이면 무시)"
     fi
 fi
@@ -165,6 +204,7 @@ if [ -f "$TODO_FILE" ] && [ $IS_MERGE -eq 0 ] && [ "$BRANCH_NAME" != "main" ] &&
     fi
 
     # 항목 설명에도 백틱이 있을 수 있으므로 첫 번째 백틱 토큰만 브랜치명으로 사용한다.
+    # shellcheck disable=SC2016 # 백틱은 명령 치환이 아니라 grep 패턴의 리터럴 문자
     FIRST_INCOMPLETE_BRANCH=$(grep -E '^[0-9]+\. \[[ /]\] `[^`]+`' "$TODO_FILE" | head -n 1 | grep -o '`[^`]*`' | head -n 1 | sed 's/`//g')
 
     if [ -n "$FIRST_INCOMPLETE_BRANCH" ] && [ "$BRANCH_NAME" != "$FIRST_INCOMPLETE_BRANCH" ]; then

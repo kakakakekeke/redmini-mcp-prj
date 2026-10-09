@@ -1,0 +1,4 @@
+# shellcheck 설정 (DL-0030) — 가드레일 셸 스크립트 정적 분석
+# `# shellcheck source=...` 지시자의 상대 경로를 스크립트 위치 기준으로 해석하고, source 대상을 함께 분석한다.
+source-path=SCRIPTDIR
+external-sources=true

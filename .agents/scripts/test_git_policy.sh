@@ -2,6 +2,8 @@
 # Git 훅 정책(pre-commit / pre-merge-commit / commit-msg / main 허용 경로 / 훅 설치) 검증 스위트.
 # 현재 작업 트리의 훅·정책 파일을 임시 복제 저장소에 적용해 실제 커밋·병합으로 검증한다.
 # 주의: 복제 원본은 메인 체크아웃의 HEAD 이며 node_modules 는 실행 중인 트리의 것을 공유한다.
+# shellcheck disable=SC2015 # `cond && ok || bad`: ok 는 항상 0 을 반환하므로 if-then-else 와 같다
+# shellcheck disable=SC2016 # 픽스처 스크립트·sed 패턴의 $·백틱은 확장하지 않는 리터럴이 의도
 SRC="$(cd "$(dirname "$0")/../.." && pwd -P)"
 MAIN=$(cd "$SRC" && cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
 SANDBOX=$(cd "$(mktemp -d)" && pwd -P)
@@ -30,7 +32,7 @@ R="$SANDBOX/repo"
 git clone -q "$MAIN" "$R" && cd "$R" || exit 1
 git config user.email t@t && git config user.name t
 ln -s "$SRC/node_modules" node_modules
-for p in .husky .agents .gitignore AGENTS.md vitest.config.ts package.json document; do rm -rf "$R/$p"; cp -R "$SRC/$p" "$R/$p"; done
+for p in .husky .agents .claude .shellcheckrc .gitignore AGENTS.md vitest.config.ts package.json document; do rm -rf "${R:?}/$p"; cp -R "$SRC/$p" "$R/$p"; done
 # 병합 전 메인 세션이 todo.md frontmatter 를 보완하는 운영 절차(DL-0029)를 재현
 grep -q '^aliases:' document/todo.md || awk 'NR>1 && /^---$/ && !d { print "aliases:\n  - todo\nstatus: active\nrelated:\n  - \"[[index]]\""; d=1 } { print }' document/todo.md > "$SANDBOX/todo.tmp" && mv "$SANDBOX/todo.tmp" document/todo.md
 fixture_commit "chore(test): apply working tree policy"
@@ -100,7 +102,7 @@ expect "main: .env 강제 커밋 차단" "fail:\\.env" git commit -qm "chore(env
 git reset -q; rm -f .env
 
 echo "📂 브랜치 커밋 (워크트리)"
-new_worktree probe feat/probe && cd .worktrees/probe
+new_worktree probe feat/probe && cd .worktrees/probe || exit 1
 expect "worktree: 훅 실행됨 (잘못된 커밋 메시지 차단)" "fail:커밋 메시지 규칙" git commit -q --allow-empty -m "bad message"
 echo 'export const n: number = "str";' > src/zz_probe.ts; git add src/zz_probe.ts
 expect "branch: 타입 에러 커밋 차단 (tsc)" "fail:타입 검사" git commit -qm "feat(probe): bad types"
@@ -153,8 +155,53 @@ rm node_modules && ln -s "$SANDBOX/nm_nocov" node_modules
 expect "branch: 커버리지 provider 미설치 시 npm install 안내" "fail:npm install" git commit -q --allow-empty -m "test(probe): nocov"
 rm node_modules && ln -s "$SRC/node_modules" node_modules
 
+echo "📂 shellcheck (스테이징된 *.sh·.husky/ 파일)"
+mkdir -p scripts
+printf '#!/bin/sh\nif [ "$1" = a]; then echo a; fi\n' > scripts/zz_bad.sh; git add scripts/zz_bad.sh
+expect "branch: shellcheck 오류가 있는 .sh 커밋 차단" "fail:shellcheck.*zz_bad\\.sh|zz_bad\\.sh.*SC[0-9]+" git commit -qm "chore(probe): bad sh"
+git reset -q --hard; rm -f scripts/zz_bad.sh
+printf '#!/bin/sh\necho $1\n' > .husky/zz-hook; git add .husky/zz-hook
+expect "branch: shellcheck 경고가 있는 .husky/ 파일 커밋 차단" "fail:SC2086" git commit -qm "chore(probe): bad hook
+
+[Impact-Reviewed]"
+git reset -q --hard; rm -f .husky/zz-hook
+mkdir -p scripts; printf '#!/bin/sh\necho "$1"\n' > scripts/zz_bad.sh; git add scripts/zz_bad.sh
+printf '#!/bin/sh\nif [ "$1" = a]; then echo a; fi\n' > scripts/zz_bad.sh
+expect "branch: 작업 트리가 아니라 스테이징된 내용 기준으로 검사 (깨끗한 스테이징 허용)" pass git commit -qm "chore(probe): staged clean sh"
+git rm -q -f scripts/zz_bad.sh && git commit -qm "chore(probe): rm sh" >/dev/null 2>&1
+mkdir -p scripts; printf '#!/bin/sh\nset -e\nname="${1:-world}"\necho "hello $name"\n' > scripts/zz_ok.sh; git add scripts/zz_ok.sh
+out=$(git commit -qm "chore(probe): clean sh" 2>&1); rc=$?
+[ $rc -eq 0 ] && echo "$out" | grep -q "shellcheck" && ok "branch: shellcheck 통과한 .sh 커밋 허용 (검사 실행 표시)" || bad "깨끗한 .sh 커밋 (rc=$rc)" "$out"
+printf '# husky notes\n' > .husky/README.md; git add .husky/README.md
+expect "branch: .husky/ 의 셸이 아닌 파일(shebang 없음)은 shellcheck 대상 아님" pass git commit -qm "docs(probe): husky readme
+
+[Impact-Reviewed]"
+# 정적 분석 도구(shellcheck)가 없는 환경: 경고 후 계속. PATH 의 모든 실행 파일을 shellcheck 만 빼고 링크한다
+# (Linux 는 shellcheck 가 /usr/bin 에 있으므로 /usr/bin 을 PATH 에 그대로 둘 수 없다).
+mkdir -p "$SANDBOX/nosc_bin"
+IFS=: read -r -a PATH_DIRS <<<"$PATH"
+for d in "${PATH_DIRS[@]}"; do for e in "$d"/*; do
+  b=${e##*/}; [ "$b" = shellcheck ] && continue
+  [ -x "$e" ] && [ ! -e "$SANDBOX/nosc_bin/$b" ] && ln -s "$e" "$SANDBOX/nosc_bin/$b"
+done; done
+echo 'echo "more"' >> scripts/zz_ok.sh; git add scripts/zz_ok.sh
+out=$(PATH="$SANDBOX/nosc_bin" git commit -qm "chore(probe): no shellcheck" 2>&1); rc=$?
+[ $rc -eq 0 ] && echo "$out" | grep -q "⚠️.*shellcheck" && ok "branch: shellcheck 미설치 시 ⚠️ 경고 후 커밋 허용" || bad "shellcheck 미설치 처리 (rc=$rc)" "$out"
+
+echo "📂 commit-msg Broken pipe"
+# 경로 목록이 파이프 버퍼(64KB)를 넘고 SIGPIPE 가 무시되는 환경(일부 IDE·에이전트 셸)에서만 재현되므로 둘 다 재현한다
+LONG=$(printf 'x%.0s' $(seq 1 200))
+mkdir -p .agents/zz_many; for i in $(seq 1 400); do echo "$i" > ".agents/zz_many/f${i}_$LONG.txt"; done; git add .agents/zz_many
+out=$(trap '' PIPE; git commit -qm "chore(probe): many core files
+
+[Impact-Reviewed]" 2>&1); rc=$?
+[ $rc -eq 0 ] && ! echo "$out" | grep -qi "broken pipe" && ok "commit-msg: 코어 파일 다수 커밋 시 Broken pipe 없음" || bad "다수 코어 파일 커밋 (rc=$rc)" "$out"
+for i in $(seq 1 400); do echo "x" >> ".agents/zz_many/f${i}_$LONG.txt"; done; git add .agents/zz_many
+expect "commit-msg: 코어 파일 다수여도 태그 없으면 차단" "fail:Impact-Reviewed" git commit -qm "chore(probe): many core files untagged"
+git reset -q --hard
+
 echo "📂 commit-msg 코어 파일"
-for f in .husky/pre-commit .claude/settings.json CLAUDE.md .mcp.json .agents/main_allowlist vitest.config.ts; do
+for f in .husky/pre-commit .claude/settings.json CLAUDE.md .mcp.json .agents/main_allowlist vitest.config.ts .shellcheckrc; do
   mkdir -p "$(dirname "$f")"
   case "$f" in *.ts|*.json) ;; *) echo "# probe" >> "$f" ;; esac
   case "$f" in *.ts) echo "// probe" >> "$f" ;; *.json) printf '\n' >> "$f" ;; esac
@@ -164,12 +211,12 @@ for f in .husky/pre-commit .claude/settings.json CLAUDE.md .mcp.json .agents/mai
 
 [Impact-Reviewed]"
 done
-mkdir -p .claude/hooks; echo "# k" > ".claude/hooks/한글.sh"; git add -A .claude
+mkdir -p .claude/hooks; printf '#!/bin/sh\n# k\n' > ".claude/hooks/한글.sh"; git add -A .claude
 expect "코어 파일 한글 경로: 태그 없으면 차단 (quotePath)" "fail:Impact-Reviewed" git commit -qm "chore(core): ko"
 git reset -q --hard
 
 echo "📂 main 병합 커밋"
-cd "$R"
+cd "$R" || exit 1
 expect "merge: 정상 브랜치 병합 허용 (pre-merge-commit)" pass git merge -q --no-ff feat/probe -m "chore(merge): merge branch 'feat/probe' into main
 
 [Impact-Reviewed]"

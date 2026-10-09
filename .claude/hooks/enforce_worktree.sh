@@ -1,6 +1,7 @@
 #!/bin/bash
 # PreToolUse(Edit|Write|MultiEdit|NotebookEdit): main 저장소에서 화이트리스트 외 파일 수정 차단.
 # 허용 경로는 .agents/main_allowlist 를 Antigravity 훅·pre-commit 과 공유한다.
+# shellcheck source=lib.sh
 . "${0%/*}/lib.sh"
 read_hook_input
 target=$(jq -r '.tool_input.file_path // .tool_input.notebook_path // ""' <<<"$input")
@@ -36,6 +37,7 @@ rel=${abs#"$toplevel/"}
 
 # 허용 경로 단일 기준: .agents/main_allowlist (DL-0028). 보호 대상 저장소의 정책 파일을 읽는다.
 MAIN_ALLOWLIST_FILE="$toplevel/.agents/main_allowlist"   # 환경변수로 교체 불가
+# shellcheck source=../../.agents/scripts/main_allowlist.sh
 . "${0%/*}/../../.agents/scripts/main_allowlist.sh"
 is_main_allowed "$rel" && exit 0
 

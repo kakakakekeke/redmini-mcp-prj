@@ -1,6 +1,7 @@
 #!/bin/bash
 # PreToolUse(Agent|Task): main 저장소 세션이 쓰기 가능한 서브에이전트를 격리 없이 호출하는 것을 차단.
 # Antigravity의 enforce_subagent_workspace.sh(Workspace: share|branch 강제)에 대응한다.
+# shellcheck source=lib.sh
 . "${0%/*}/lib.sh"
 read_hook_input
 cwd=$(jq -r '.cwd // empty' <<<"$input")
