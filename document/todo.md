@@ -28,6 +28,12 @@ related:
 ### ⚠️ P2 — 단기 조치 (보안 감사 기반, 1-2주)
 * (현재 등록된 모든 P2 작업이 완료되었습니다.)
 
+### 🧩 기능 확장 — Redmine API 커버리지 (상호 독립, 병렬 진행)
+- [ ] 아키텍처 및 라이브러리 도입 관련 DL/ADR 작성 여부 판단 — 각 브랜치에서 도구 추가 대신 기존 도구 `action`/파라미터 확장 우선 검토, 결정 사항은 DL로 기록
+- [ ] `feat/saved-queries` : 저장된 필터(Queries, `/queries.json`) 목록 조회 및 `search_issues`에서 필터 이름으로 지정(이름 → `query_id` 자동 변환) — 팀이 만들어 둔 필터 재사용
+- [ ] `feat/project-files` : 프로젝트 파일 탭(Files, `/projects/{id}/files.json`) 목록 조회 및 `upload_attachment` 토큰으로 파일 탭 등록(`dry_run` 기본 true) — [[attachment_guide]]
+- [ ] `feat/project-memberships-categories` : 프로젝트 멤버십(Memberships)·일감 범주(Issue Categories) 조회 — 일감 생성 시 담당자·범주 정확도 향상
+
 ### 📌 P3 — 중기 조치 (보안 감사 기반, 1개월)
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
 
