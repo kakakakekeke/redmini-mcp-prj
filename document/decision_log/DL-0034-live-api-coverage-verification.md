@@ -62,7 +62,7 @@ related:
 | 일감 범주 | `MCP-TEST UI`(기본 담당자 admin), `MCP-TEST 백엔드` | REST |
 | 사용자/그룹 | 사용자 `mcptest`(id 5, 역할 개발자), 그룹 `MCP-TEST 그룹`(id 6, 역할 보고자) 멤버십 | REST |
 | 버전 | `MCP-TEST v1` | REST |
-| 검증 산출물 | 일감 #7(범주 `MCP-TEST 백엔드`), 파일 탭 `mcp-test-notes.txt`(id 6, 버전 `MCP-TEST v1`) | MCP 도구 |
+| 검증 산출물 | 일감 #7·#8(범주 `MCP-TEST 백엔드`), 파일 탭 `mcp-test-notes.txt` 2건(버전 `MCP-TEST v1`) — 재검증 실행분 포함 | MCP 도구 |
 
 ```mermaid
 sequenceDiagram
@@ -133,12 +133,14 @@ sequenceDiagram
 | 증상 | 무효·만료 토큰으로 `manage_project_files` `add` 실행 시 `해당 프로젝트를 찾을 수 없습니다: test-project` 반환 (프로젝트는 정상) |
 | 원인 | `toFriendlyError`가 404를 일괄 "프로젝트 없음"으로 변환. Redmine은 토큰 무효 시에도 404 반환 |
 | 영향 | LLM이 프로젝트 식별자를 의심해 잘못된 재시도를 수행할 수 있음 (보안 영향 없음) |
-| 조치 | 브랜치 `fix/project-files-404-message` — `add` 경로 404 안내에 토큰 무효·만료 가능성과 `upload_attachment` 재발급 안내 포함, `list` 경로는 기존 메시지 유지 |
+| 조치 | 브랜치 `fix/project-files-404-message` (병합 `57f6f5a`) — `add` 경로 404 안내에 토큰 무효·만료 가능성과 `upload_attachment` 재발급 안내 포함, `list` 경로는 기존 메시지 유지. 버전 해석 과정에서 이미 확인된 사실(프로젝트 존재·버전 소유)은 추가 API 호출 없이 원인 목록에서 제외 |
+| 재검증 | B6 응답: `파일 등록 실패 (404 Not Found). 가능한 원인: (1) 업로드 토큰(token)이 유효하지 않거나 만료되었거나 이미 사용됨 → upload_attachment 로 다시 업로드해 새 토큰을 발급받으세요 / (2) 프로젝트를 찾을 수 없음: test-project` |
+| 미반영 (보안 리뷰 Low) | `project_id` 문자열의 줄바꿈·양방향 제어 문자가 오류 메시지에 그대로 들어갈 수 있음 — 기존 `toFriendlyError`부터 있던 문제로 별도 과제 후보 |
 
 ---
 
 ## 6. 후속 조치 (Action Items)
 - [x] 3종 기능 라이브 시나리오 20건 검증
 - [x] 404 메시지 결함 수정 브랜치 진행
-- [ ] 수정 병합 후 B6 재검증 결과 본 문서에 반영
+- [x] 수정 병합(`57f6f5a`) 후 전체 20건 재실행 → 20/20 통과, B6 메시지 개선 확인 (§5)
 - [ ] (선택) 라이브 검증 스크립트를 저장소에 편입할지 검토 — 현재는 로컬 Redmine·관리자 키 의존이라 `npm test` 대상에서 제외

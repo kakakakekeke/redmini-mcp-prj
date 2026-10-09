@@ -35,6 +35,7 @@ related:
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
 
 ## ✅ 완료된 작업 (Done)
+- [x] `fix/project-files-404-message` : `manage_project_files` add 404 시 업로드 토큰 무효·만료를 원인으로 안내 (라이브 검증 발견 결함) — [[DL-0034-live-api-coverage-verification]], [[DL-0032-project-files]]
 - [x] `feat/saved-queries` : `search_issues`에 `saved_query`(필터 이름 → `query_id`, 프로젝트 우선·모호성 처리) 및 `list_saved_queries` 목록 조회 모드 추가 — [[DL-0031-saved-queries]]
 - [x] `feat/project-memberships-categories` : `get_projects` `include`(memberships, issue_categories)로 멤버십·일감 범주 조회(id/name만 노출, 멤버십 1,000건 상한), `create_issue` 범주 이름 → `category_id` 변환 — [[DL-0033-project-memberships-categories]]
 - [x] `feat/project-files` : 프로젝트 파일 탭 목록 조회·등록 `manage_project_files` 도구(action: list | add, `dry_run` 기본 true) 추가, 도구 수 19개 — [[DL-0032-project-files]], [[attachment_guide]]
