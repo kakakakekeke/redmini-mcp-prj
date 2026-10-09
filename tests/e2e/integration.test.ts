@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import express from "express";
 import { Server } from "http";
-import { spawn, ChildProcess } from "child_process";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { startHttpServer, SpawnedServer } from "./server-process.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -103,8 +103,9 @@ describe("Redmine MCP Server E2E Integration Tests", () => {
 
     beforeAll(async () => {
       transport = new StdioClientTransport({
-        command: "npx",
-        args: ["tsx", SRC_INDEX],
+        // npx 를 거치지 않아 close 시 손자 프로세스가 남지 않는다
+        command: process.execPath,
+        args: ["--import", "tsx", SRC_INDEX],
         env: {
           ...process.env,
           TRANSPORT: "stdio",
@@ -220,20 +221,13 @@ describe("Redmine MCP Server E2E Integration Tests", () => {
   describe("[TC-03, TC-06, TC-07] HTTP (Streamable HTTP) 기반 다중 사용자 접속 및 인프라 검증", () => {
     let client: Client;
     let transport: StreamableHTTPClientTransport;
-    let child: ChildProcess;
-    let httpPort: number = 33333; // Fixed port for testing
+    let server: SpawnedServer | undefined;
+    let httpPort: number;
 
     beforeAll(async () => {
-      child = spawn("npx", ["tsx", SRC_INDEX], {
-        env: {
-          ...process.env,
-          TRANSPORT: "http",
-          PORT: httpPort.toString(),
-          REDMINE_URL: redmineUrl
-        }
-      });
-
-      await new Promise(r => setTimeout(r, 2000));
+      // 고정 포트·고정 대기 대신 빈 포트를 할당받고 /health 가 200 이 될 때까지 폴링한다
+      server = await startHttpServer(SRC_INDEX, { REDMINE_URL: redmineUrl });
+      httpPort = server.port;
 
       transport = new StreamableHTTPClientTransport(new URL(`http://localhost:${httpPort}/mcp`), {
         requestInit: {
@@ -244,12 +238,15 @@ describe("Redmine MCP Server E2E Integration Tests", () => {
       });
       client = new Client({ name: "test-client", version: "1.0.0" }, { capabilities: {} });
       await client.connect(transport);
-    });
+    }, 20000);
 
     afterAll(async () => {
-      await transport.close();
-      if (child) child.kill();
-    });
+      try {
+        await transport?.close();
+      } finally {
+        await server?.stop();
+      }
+    }, 10000);
 
     it("[TC-03] 사용자 별 헤더 인증", async () => {
       const result: any = await client.callTool({
