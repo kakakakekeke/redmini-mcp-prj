@@ -87,7 +87,7 @@ flowchart TD
 
 ## 4. 후속 조치 (Action Items)
 - [x] 메인 세션: 로컬 Redmine 픽스처(`MCP-TEST 고객사`/`요청번호`/`영향범위`)로 관리자·비관리자 키 라이브 검증 — 12/12 통과 ([[DL-0034-live-api-coverage-verification]] §5-1)
-- [ ] 비관리자 키의 반복 403·대형 `/custom_fields.json` 반복 조회를 줄이기 위해 API 키 단위 짧은 TTL 캐시 검토
+- [x] 비관리자 키의 반복 403·대형 `/custom_fields.json` 반복 조회를 줄이기 위해 API 키 단위 짧은 TTL 캐시 검토 → [[DL-0036-custom-field-defs-cache|DL-0036]] (클라이언트 단위 캐시)
 - [ ] `update_issue` 는 PUT 이 204 라 적용 누락을 응답으로 확인할 수 없음 — 워크플로 읽기 전용 필드는 현재 탐지 불가 (재조회 비교 검토)
 - [ ] user·version 형식 필드의 이름 → ID 해석(Smart Name Resolution) 검토
 - [ ] `create_issue` 에서 트래커 미지정(프로젝트 기본 트래커) 시 트래커 활성 검사 보강 검토

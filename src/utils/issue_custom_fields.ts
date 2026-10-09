@@ -10,6 +10,7 @@ import { detectPromptInjection } from "./prompt_injection_detector.js";
  * - 이름 → ID: 프로젝트의 issue_custom_fields(GET /projects/{id}.json?include=issue_custom_fields)로 해석.
  * - 값 사전 검증: GET /custom_fields.json(관리자 전용)이 되면 목록 허용값·다중 선택·트래커를 검사하고,
  *   실패(403 등)하면 건너뛰고 Redmine 422 응답에 맡긴다(graceful degradation).
+ *   정의는 클라이언트(API 키)별로 짧게 캐시하고, 캐시로 거부하려 할 때는 1회 재조회해 확인한다(DL-0036).
  * - regexp 는 관리자 정의 패턴을 이벤트 루프에서 실행하면 ReDoS 위험이 있어 실행하지 않고 Redmine 에 맡긴다.
  */
 
@@ -17,6 +18,10 @@ const MAX_ENTRIES = 50;
 const MAX_ALLOWED_VALUES_IN_ERROR = 100;
 /** 필드당 처리할 허용값 상한 (대형 정의 응답 방어) */
 const MAX_POSSIBLE_VALUES = 1000;
+/** 저장할 일감 필드 정의 수 상한 (캐시 엔트리 크기 제한, DL-0036) */
+const MAX_DEFINITIONS = 1000;
+/** regexp 는 실행하지 않고 안내용으로만 보관하므로 길이를 잘라 저장한다 */
+const MAX_REGEXP_LENGTH = 1024;
 /** 허용값 검사를 하는 형식. user·version 은 /custom_fields.json 의 possible_values 가 프로젝트 문맥 없이 계산되어 신뢰할 수 없다. */
 const POSSIBLE_VALUE_FORMATS = new Set(["list", "enumeration", "bool"]);
 const MAX_REDMINE_MESSAGE_LENGTH = 2000;
@@ -149,28 +154,87 @@ async function fetchProjectFields(client: RedmineClient, projectId: string | num
 
 type DefinitionsResult = { defs: Map<number, FieldDefinition> } | { skippedReason: string };
 
-async function fetchDefinitions(client: RedmineClient): Promise<DefinitionsResult> {
+/**
+ * 관리자 정의(GET /custom_fields.json) 캐시. DL-0036
+ *
+ * - 스코프는 RedmineClient 인스턴스(= API 키 1개, MCP 세션 1개)다. 키 사이에 정의·권한 판정이 섞이지 않고,
+ *   세션이 끝나 클라이언트가 수거되면 엔트리도 함께 사라진다(WeakMap, 인스턴스당 1엔트리).
+ * - 성공은 5분(SmartNameResolver 기본 TTL 과 같음), 401/403(권한 없음)은 10분 캐시한다.
+ *   5xx·네트워크·예상외 응답은 일시적일 수 있으므로 캐시하지 않는다.
+ * - 같은 클라이언트의 동시 조회는 하나의 요청으로 합친다(in-flight dedupe).
+ */
+export const DEFINITIONS_CACHE_TTL_MS = 300_000;
+export const DEFINITIONS_DENIED_TTL_MS = 600_000;
+
+interface DefinitionsCacheEntry {
+  result: DefinitionsResult;
+  expiresAt: number;
+}
+
+interface FetchedDefinitions {
+  result: DefinitionsResult;
+  /** 캐시 유효 기간(ms). undefined 면 캐시하지 않는다. */
+  ttlMs?: number;
+}
+
+const definitionsCache = new WeakMap<RedmineClient, DefinitionsCacheEntry>();
+const definitionsInFlight = new WeakMap<RedmineClient, Promise<DefinitionsResult>>();
+
+const NOT_PRE_VALIDATED = "Values were not pre-validated; Redmine validates them on submit.";
+
+/**
+ * 정의를 돌려준다. fromCache 는 이번 호출이 요청을 보내지 않고 캐시된 결과를 썼는지 여부.
+ * force 면 캐시를 건너뛴다. force 여도 진행 중인 요청에는 합류한다: 캐시가 비었거나 만료되어 시작된 조회,
+ * 또는 다른 호출의 강제 재조회이므로 호출자가 읽은 캐시보다 나중에 보낸 요청이다.
+ */
+async function getDefinitions(
+  client: RedmineClient,
+  force = false
+): Promise<{ result: DefinitionsResult; fromCache: boolean }> {
+  if (!force) {
+    const cached = definitionsCache.get(client);
+    if (cached && Date.now() < cached.expiresAt) return { result: cached.result, fromCache: true };
+  }
+  let pending = definitionsInFlight.get(client);
+  if (!pending) {
+    pending = fetchDefinitions(client).then(({ result, ttlMs }) => {
+      if (ttlMs !== undefined) definitionsCache.set(client, { result, expiresAt: Date.now() + ttlMs });
+      else definitionsCache.delete(client); // 일시 실패면 (강제 재조회로 받은 경우에도) 기존 캐시를 무효화한다
+      return result;
+    });
+    const settled = pending.finally(() => {
+      if (definitionsInFlight.get(client) === settled) definitionsInFlight.delete(client);
+    });
+    definitionsInFlight.set(client, settled);
+    pending = settled;
+  }
+  return { result: await pending, fromCache: false };
+}
+
+async function fetchDefinitions(client: RedmineClient): Promise<FetchedDefinitions> {
   let data: any;
   try {
     data = await client.getCustomFields();
   } catch (error: any) {
     // 사전 검증은 부가 기능이므로 어떤 실패든 쓰기를 막지 않는다. 사유에는 상태 코드만 넣는다.
     const status = httpStatus(error);
-    const why =
-      status === 401 || status === 403
-        ? `HTTP ${status}; administrator privileges required`
-        : status !== undefined
-          ? `HTTP ${status}`
-          : "request failed";
+    const denied = status === 401 || status === 403;
+    const why = denied
+      ? `HTTP ${status}; administrator privileges required`
+      : status !== undefined
+        ? `HTTP ${status}`
+        : "request failed";
     return {
-      skippedReason: `GET /custom_fields.json is not available (${why}). Values were not pre-validated; Redmine validates them on submit.`,
+      result: { skippedReason: `GET /custom_fields.json is not available (${why}). ${NOT_PRE_VALIDATED}` },
+      ttlMs: denied ? DEFINITIONS_DENIED_TTL_MS : undefined,
     };
   }
   if (!Array.isArray(data?.custom_fields)) {
-    return { skippedReason: "Unexpected /custom_fields.json response. Values were not pre-validated; Redmine validates them on submit." };
+    return { result: { skippedReason: `Unexpected /custom_fields.json response. ${NOT_PRE_VALIDATED}` } };
   }
   const defs = new Map<number, FieldDefinition>();
   for (const d of data.custom_fields) {
+    if (defs.size >= MAX_DEFINITIONS) break;
     if (!d || !isPositiveSafeInt(d.id)) continue;
     if (d.customized_type !== undefined && d.customized_type !== "issue") continue;
     const possibleValues: PossibleValue[] = [];
@@ -189,12 +253,17 @@ async function fetchDefinitions(client: RedmineClient): Promise<DefinitionsResul
       id: d.id,
       format: typeof d.field_format === "string" ? d.field_format : "",
       multiple: d.multiple === true,
-      regexp: typeof d.regexp === "string" ? d.regexp : "",
+      regexp:
+        typeof d.regexp !== "string"
+          ? ""
+          : d.regexp.length > MAX_REGEXP_LENGTH
+            ? `${d.regexp.slice(0, MAX_REGEXP_LENGTH)}…`
+            : d.regexp,
       possibleValues,
       trackerIds,
     });
   }
-  return { defs };
+  return { result: { defs }, ttlMs: DEFINITIONS_CACHE_TTL_MS };
 }
 
 /** 키 → 프로젝트 필드. Redmine 데이터(필드 이름)는 예외 메시지에 넣지 않는다 (DL-0033 범주 에러 방식). */
@@ -320,9 +389,9 @@ export async function resolveIssueCustomFields(
     applicableFieldIds?: number[];
   } = {}
 ): Promise<CustomFieldResolution> {
-  const [projectFields, defsResult] = await Promise.all([
+  const [projectFields, defs] = await Promise.all([
     fetchProjectFields(client, projectId),
-    fetchDefinitions(client),
+    getDefinitions(client),
   ]);
 
   const fields: ResolvedCustomField[] = [];
@@ -373,24 +442,45 @@ export async function resolveIssueCustomFields(
     errors,
   });
 
-  if (!("defs" in defsResult)) {
-    return finish({ performed: false, reason: defsResult.skippedReason });
-  }
-
-  const skipped: SkippedCheck[] = [];
-  for (const field of candidates) {
-    const def = defsResult.defs.get(field.id);
-    if (!def) {
-      skipped.push({ id: field.id, check: "definition", reason: "field definition not found in /custom_fields.json" });
-      continue;
+  /** 정의로 후보 필드를 검증한다. 필드 값은 바꾸지 않고 표준 값만 모아 돌려준다(재검증 시 원래 입력을 쓰기 위해). */
+  const validateAll = (defs: Map<number, FieldDefinition>) => {
+    const skipped: SkippedCheck[] = [];
+    const valueErrors: CustomFieldValueError[] = [];
+    const canonical = new Map<number, CustomFieldValue>();
+    for (const field of candidates) {
+      const def = defs.get(field.id);
+      if (!def) {
+        skipped.push({ id: field.id, check: "definition", reason: "field definition not found in /custom_fields.json" });
+        continue;
+      }
+      const r = validateField(field, def, opts.trackerId, skipped);
+      if (r.error) valueErrors.push(r.error);
+      else canonical.set(field.id, r.value);
     }
-    const r = validateField(field, def, opts.trackerId, skipped);
-    if (r.error) errors.push(r.error);
-    else field.value = r.value;
+    return { skipped, valueErrors, canonical };
+  };
+
+  const run = (r: DefinitionsResult) =>
+    "defs" in r ? { ok: true as const, ...validateAll(r.defs) } : { ok: false as const, reason: r.skippedReason };
+
+  let outcome = run(defs.result);
+  // 캐시된 정의로 거부하려 할 때만 1회 강제 재조회한다. 관리자가 허용값·트래커를 방금 바꿨는데
+  // 오래된 캐시로 잘못 막는 것을 방지한다. 재조회 결과로 최종 판단하며 다시 재조회하지 않는다.
+  if (outcome.ok && outcome.valueErrors.length > 0 && defs.fromCache) {
+    outcome = run((await getDefinitions(client, true)).result);
   }
 
+  if (!outcome.ok) {
+    return finish({ performed: false, reason: outcome.reason });
+  }
+
+  errors.push(...outcome.valueErrors);
+  for (const field of candidates) {
+    const value = outcome.canonical.get(field.id);
+    if (value !== undefined) field.value = value;
+  }
   const validation: CustomFieldValidationInfo = { performed: true };
-  if (skipped.length > 0) validation.skipped_checks = skipped;
+  if (outcome.skipped.length > 0) validation.skipped_checks = outcome.skipped;
   return finish(validation);
 }
 
