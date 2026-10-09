@@ -117,6 +117,18 @@ export interface UpdateVersionData {
   description?: string;
 }
 
+/**
+ * 프로젝트 ID 를 URL 경로 세그먼트로 인코딩한다. encodeURIComponent 는 '.'·'..' 를 그대로 두어
+ * axios 가 dot-segment 로 정규화하므로(상위 경로 이동) 빈 값과 함께 거부한다. (DL-0033)
+ */
+function encodeProjectSegment(projectId: string | number): string {
+  const id = String(projectId).trim();
+  if (id === "" || id === "." || id === "..") {
+    throw new Error(`Invalid project id: ${JSON.stringify(id)}`);
+  }
+  return encodeURIComponent(id);
+}
+
 export class RedmineClient {
   private api: AxiosInstance;
 
@@ -229,6 +241,41 @@ export class RedmineClient {
     } catch (error) {
       throw error;
     }
+  }
+
+  /**
+   * 프로젝트 멤버십 전체 조회 (페이지네이션). 응답 크기·호출 수 폭주를 막기 위해 최대 10페이지(1,000건)까지만
+   * 가져오고, 그 이상이면 truncated=true 로 표시한다. (DL-0033)
+   */
+  async getProjectMemberships(projectId: string | number) {
+    const encodedId = encodeProjectSegment(projectId);
+    const limit = 100;
+    const maxPages = 10;
+    let offset = 0;
+    let pages = 0;
+    let memberships: any[] = [];
+    let totalCount = 0;
+
+    do {
+      const { data } = await this.api.get(`/projects/${encodedId}/memberships.json`, {
+        params: { limit, offset },
+      });
+      const page = Array.isArray(data?.memberships) ? data.memberships : [];
+      memberships = memberships.concat(page);
+      totalCount = typeof data?.total_count === "number" ? data.total_count : memberships.length;
+      offset += limit;
+      pages += 1;
+      if (page.length === 0) break;
+    } while (offset < totalCount && pages < maxPages);
+
+    // 상한 도달이든 빈 페이지로 인한 조기 종료든, 받은 건수가 total_count 보다 적으면 불완전한 목록이다.
+    return { memberships, total_count: totalCount, truncated: memberships.length < totalCount };
+  }
+
+  async getIssueCategories(projectId: string | number) {
+    const encodedId = encodeProjectSegment(projectId);
+    const { data } = await this.api.get(`/projects/${encodedId}/issue_categories.json`);
+    return data;
   }
 
   async getStatuses() {
