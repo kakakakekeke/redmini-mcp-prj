@@ -117,6 +117,13 @@ export interface UpdateVersionData {
   description?: string;
 }
 
+export interface AddProjectFileData {
+  token: string;
+  filename?: string;
+  description?: string;
+  version_id?: number;
+}
+
 export class RedmineClient {
   private api: AxiosInstance;
 
@@ -505,7 +512,8 @@ export class RedmineClient {
 
   async getProjectVersions(projectId: string | number) {
     try {
-      const { data } = await this.api.get(`/projects/${projectId}/versions.json`);
+      const encodedId = encodeURIComponent(String(projectId).trim());
+      const { data } = await this.api.get(`/projects/${encodedId}/versions.json`);
       return data;
     } catch (error) {
       throw error;
@@ -571,6 +579,24 @@ export class RedmineClient {
     } catch (error) {
       throw error;
     }
+  }
+
+  // 프로젝트 "파일" 탭 (Files API, Redmine 3.4+). project id 는 경로 조작 방지를 위해 인코딩한다. (DL-0032)
+  async getProjectFiles(projectId: string | number) {
+    const encodedId = encodeURIComponent(String(projectId).trim());
+    const { data } = await this.api.get(`/projects/${encodedId}/files.json`);
+    return data;
+  }
+
+  async addProjectFile(projectId: string | number, fileData: AddProjectFileData) {
+    const encodedId = encodeURIComponent(String(projectId).trim());
+    const response = await this.api.post(`/projects/${encodedId}/files.json`, {
+      file: fileData,
+    });
+    if (response.status === 204 || !response.data) {
+      return { message: `File registered to project ${projectId} successfully` };
+    }
+    return response.data;
   }
 
   async getAttachment(attachmentId: number) {
