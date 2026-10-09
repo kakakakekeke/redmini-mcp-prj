@@ -46,7 +46,7 @@
 ## 4. MCP 서버 개발 핵심 지침
 
 자체 Redmine 서버 구축 시 지켜야 할 기본 아키텍처 원칙:
-1. **Tool Bloat 방지**: 엔드포인트마다 도구를 만들지 않고 도메인 단위로 묶습니다. 같은 리소스의 CRUD는 `action` 파라미터를 가진 하나의 `manage_*` 도구로 통합합니다(예: `manage_versions`, `manage_watchers`). 새 도구 추가 전 기존 도구의 `action` 확장으로 해결할 수 없는지 먼저 검토하고, 추가 시 DL을 작성합니다. (현재 18개 — `src/index.ts` 참고)
+1. **Tool Bloat 방지**: 엔드포인트마다 도구를 만들지 않고 도메인 단위로 묶습니다. 같은 리소스의 CRUD는 `action` 파라미터를 가진 하나의 `manage_*` 도구로 통합합니다(예: `manage_versions`, `manage_watchers`). 새 도구 추가 전 기존 도구의 `action` 확장으로 해결할 수 없는지 먼저 검토하고, 추가 시 DL을 작성합니다. (현재 19개 — `src/index.ts` 참고)
 2. **Smart Name Resolution**: LLM이 숫자 ID(`tracker_id`) 대신 문자열(`"tracker": "결함"`, `"status": "진행중"`)을 넘겨도 서버가 캐시를 통해 자동 매핑.
 3. **Textile ↔ Markdown 호환성**: Redmine 본문 포맷터에 따라 투명하게 상호 변환.
 4. **안전 장치**: 모든 쓰기·삭제 도구는 `dry_run` 파라미터를 가지며 **기본값은 `true`**입니다. `dry_run: true`이면 API를 호출하지 않고 미리보기만 반환하고, 사용자 확인 후 `dry_run: false`로 재호출합니다. (ADR-0003, DL-0007)

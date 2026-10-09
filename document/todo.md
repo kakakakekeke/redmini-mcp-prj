@@ -31,13 +31,13 @@ related:
 ### 🧩 기능 확장 — Redmine API 커버리지 (상호 독립, 병렬 진행)
 - [ ] 아키텍처 및 라이브러리 도입 관련 DL/ADR 작성 여부 판단 — 각 브랜치에서 도구 추가 대신 기존 도구 `action`/파라미터 확장 우선 검토, 결정 사항은 DL로 기록
 - [ ] `feat/saved-queries` : 저장된 필터(Queries, `/queries.json`) 목록 조회 및 `search_issues`에서 필터 이름으로 지정(이름 → `query_id` 자동 변환) — 팀이 만들어 둔 필터 재사용
-- [ ] `feat/project-files` : 프로젝트 파일 탭(Files, `/projects/{id}/files.json`) 목록 조회 및 `upload_attachment` 토큰으로 파일 탭 등록(`dry_run` 기본 true) — [[attachment_guide]]
-- [ ] `feat/project-memberships-categories` : 프로젝트 멤버십(Memberships)·일감 범주(Issue Categories) 조회 — 일감 생성 시 담당자·범주 정확도 향상
 
 ### 📌 P3 — 중기 조치 (보안 감사 기반, 1개월)
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
 
 ## ✅ 완료된 작업 (Done)
+- [x] `feat/project-memberships-categories` : `get_projects` `include`(memberships, issue_categories)로 멤버십·일감 범주 조회(id/name만 노출, 멤버십 1,000건 상한), `create_issue` 범주 이름 → `category_id` 변환 — [[DL-0033-project-memberships-categories]]
+- [x] `feat/project-files` : 프로젝트 파일 탭 목록 조회·등록 `manage_project_files` 도구(action: list | add, `dry_run` 기본 true) 추가, 도구 수 19개 — [[DL-0032-project-files]], [[attachment_guide]]
 - [x] `chore/guardrail-polish` : commit-msg `Broken pipe` 출력 잡음 제거, Bash 가드의 훅 경로 설정 조회 명령 오탐(명령 문자열 전체 매칭) 수정, shellcheck 정적 분석 도입 — [[DL-0030-guardrail-polish]]
 - [x] `fix/e2e-dynamic-port` : E2E 테스트 고정 포트(33333)·고정 대기(2초) 제거 — 동적 포트 + `/health` 폴링으로 연속·동시 `npm test` 간헐 실패 해소 (pre-commit·병합이 `npm test`에 의존) — [[DL-0029-agent-rules-cleanup]] 후속
 - [x] `chore/agent-rules-cleanup` : 낡은 규칙 정리(AGENTS.md 도구 원칙, ADR-0002 대체, 템플릿·frontmatter, 브랜치 네이밍, 문서 인덱스 검사 강화) 및 TDD 효율 개선(리뷰 등급화, 커버리지 기준선, 테스트 누락 경고, DL 작성 조건 축소) — [[DL-0029-agent-rules-cleanup]], [[0005-test-architecture-revision]]

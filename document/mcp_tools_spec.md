@@ -114,6 +114,21 @@ LLM(Claude/Cursor)이 불필요하게 많은 도구를 가지지 않도록(Tool 
 
 *   **Parameters:**
     *   `include_archived` (boolean, optional): 보관된 프로젝트 포함 여부 (기본: false).
+    *   `project_id` (string | integer, optional): 지정 시 단일 프로젝트 상세(트래커, 커스텀 필드 등)를 조회. 경로 조작 문자(`/`, `\`, `..`) 거부.
+    *   `include` (array, optional, `project_id` 필수): `"memberships"` — 멤버(사용자/그룹 id·이름)와 역할, 최대 1,000건(초과 시 `memberships_truncated`). `"issue_categories"` — 범주와 기본 담당자. 섹션별 403/404 는 `<section>_error` 로 반환. ([[DL-0033-project-memberships-categories|DL-0033]])
+    *   관련: `create_issue` 의 `category`(이름) 파라미터는 이 목록 기준으로 `category_id` 로 변환됩니다.
+
+### 3.4. `manage_project_files` (쓰기 포함, [[DL-0032-project-files|DL-0032]])
+프로젝트 "파일(Files)" 탭을 조회하거나, `upload_attachment` 로 발급받은 토큰을 파일 탭에 등록합니다 (`GET/POST /projects/{project_id}/files.json`, Redmine 3.4+). 업로드→등록 흐름은 [[attachment_guide|첨부파일 가이드]] 3.3절 참고.
+
+*   **Parameters:**
+    *   `action` (enum, required): `list` (파일 탭 목록: filename, filesize, content_type, description, author, version, digest, downloads, created_on 등) | `add` (토큰 등록).
+    *   `project_id` (string | number, required): ID·식별자·프로젝트명. `/`, `\`, `..` 차단, 1~255자. 프로젝트명은 Smart Name Resolution 으로 ID 매핑.
+    *   `token` (string, `add` 필수): `upload_attachment` 응답의 토큰 (`^\d+\.[0-9a-zA-Z]+$`).
+    *   `filename` (string, optional): 표시 파일명 (경로 구분자·`..` 금지).
+    *   `description` (string, optional): 설명 (최대 255자).
+    *   `version_id` (integer, optional) 또는 `version` (string, optional): 연결할 버전. 이름은 프로젝트 버전 목록에서 대소문자 무시로 매핑하며 둘을 동시에 줄 수 없습니다.
+    *   `dry_run` (boolean, default: `true`): `add` 의 미리보기. 실제 등록은 `false` 로 재호출.
 
 ---
 

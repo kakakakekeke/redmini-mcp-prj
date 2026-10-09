@@ -602,6 +602,69 @@ it("should normalize 204 No Content or empty data to success message on update",
     });
   });
 
+  describe("project files", () => {
+    it("should call GET /projects/:id/files.json with encoded project id", async () => {
+      const mockGet = vi.fn().mockResolvedValue({ data: { files: [{ id: 1, filename: "a.zip" }] } });
+      (client as any).api = { get: mockGet };
+
+      const result = await client.getProjectFiles(" my project ");
+      expect(mockGet).toHaveBeenCalledWith("/projects/my%20project/files.json");
+      expect(result).toEqual({ files: [{ id: 1, filename: "a.zip" }] });
+    });
+
+    it("should POST /projects/:id/files.json with file payload and normalize 204", async () => {
+      const mockPost = vi.fn().mockResolvedValue({ status: 204, data: "" });
+      (client as any).api = { post: mockPost };
+
+      const fileData = { token: "1.abc", description: "pkg", version_id: 3 };
+      const result = await client.addProjectFile(5, fileData);
+      expect(mockPost).toHaveBeenCalledWith("/projects/5/files.json", { file: fileData });
+      expect(result).toEqual({ message: "File registered to project 5 successfully" });
+    });
+
+    it("should return response data when POST returns a body", async () => {
+      const mockPost = vi.fn().mockResolvedValue({ status: 200, data: { file: { id: 9 } } });
+      (client as any).api = { post: mockPost };
+
+      const result = await client.addProjectFile("p?x", { token: "1.abc" });
+      expect(mockPost).toHaveBeenCalledWith("/projects/p%3Fx/files.json", { file: { token: "1.abc" } });
+      expect(result).toEqual({ file: { id: 9 } });
+    });
+
+    it("should encode project id in getProjectVersions", async () => {
+      const mockGet = vi.fn().mockResolvedValue({ data: { versions: [] } });
+      (client as any).api = { get: mockGet };
+      await client.getProjectVersions("a#b?c");
+      expect(mockGet).toHaveBeenCalledWith("/projects/a%23b%3Fc/versions.json");
+    });
+
+    it("should normalize an empty 200 response from addProjectFile", async () => {
+      (client as any).api = { post: vi.fn().mockResolvedValue({ status: 200, data: "" }) };
+      const result = await client.addProjectFile(5, { token: "1.abc" });
+      expect(result).toEqual({ message: "File registered to project 5 successfully" });
+    });
+
+    it("should propagate errors", async () => {
+      (client as any).api = {
+        get: vi.fn().mockRejectedValue(new Error("get failed")),
+        post: vi.fn().mockRejectedValue(new Error("post failed")),
+      };
+      await expect(client.getProjectFiles(1)).rejects.toThrow("get failed");
+      await expect(client.addProjectFile(1, { token: "1.a" })).rejects.toThrow("post failed");
+    });
+
+    it("should reject dot-segment project ids before calling the API", async () => {
+      const get = vi.fn();
+      const post = vi.fn();
+      (client as any).api = { get, post };
+      await expect(client.getProjectFiles("..")).rejects.toThrow("Invalid project id");
+      await expect(client.addProjectFile(" . ", { token: "1.a" })).rejects.toThrow("Invalid project id");
+      await expect(client.getProjectVersions("")).rejects.toThrow("Invalid project id");
+      expect(get).not.toHaveBeenCalled();
+      expect(post).not.toHaveBeenCalled();
+    });
+  });
+
   describe("uploadFile", () => {
     it("should call POST /uploads.json with binary content and headers", async () => {
       const mockPost = vi.fn().mockResolvedValue({
@@ -830,6 +893,118 @@ it("should normalize 204 No Content or empty data to success message on update",
       (client as any).api = { get: mockGet };
 
       await expect(client.getIssues({ project_id: "fail" })).rejects.toThrow("Network Error");
+    });
+  });
+  describe("getProjectMemberships", () => {
+    it("should paginate GET /projects/:id/memberships.json to fetch all memberships", async () => {
+      const mockGet = vi.fn();
+      (client as any).api = { get: mockGet };
+      mockGet
+        .mockResolvedValueOnce({ data: { memberships: Array.from({ length: 100 }, (_, i) => ({ id: i })), total_count: 120 } })
+        .mockResolvedValueOnce({ data: { memberships: Array.from({ length: 20 }, (_, i) => ({ id: 100 + i })), total_count: 120 } });
+
+      const data = await client.getProjectMemberships(5);
+      expect(mockGet).toHaveBeenCalledTimes(2);
+      expect(mockGet).toHaveBeenNthCalledWith(1, "/projects/5/memberships.json", { params: { limit: 100, offset: 0 } });
+      expect(mockGet).toHaveBeenNthCalledWith(2, "/projects/5/memberships.json", { params: { limit: 100, offset: 100 } });
+      expect(data.memberships.length).toBe(120);
+      expect(data.total_count).toBe(120);
+      expect(data.truncated).toBe(false);
+    });
+
+    it("should stop at the page cap and flag truncated when total_count is huge", async () => {
+      const mockGet = vi.fn().mockImplementation(async () => ({
+        data: { memberships: Array.from({ length: 100 }, (_, i) => ({ id: i })), total_count: 1_000_000 },
+      }));
+      (client as any).api = { get: mockGet };
+
+      const data = await client.getProjectMemberships(5);
+      expect(mockGet).toHaveBeenCalledTimes(10);
+      expect(data.memberships.length).toBe(1000);
+      expect(data.total_count).toBe(1_000_000);
+      expect(data.truncated).toBe(true);
+    });
+
+    it("should stop when a page returns no memberships (defensive against wrong total_count)", async () => {
+      const mockGet = vi.fn().mockResolvedValue({ data: { memberships: [], total_count: 500 } });
+      (client as any).api = { get: mockGet };
+
+      const data = await client.getProjectMemberships(5);
+      expect(mockGet).toHaveBeenCalledTimes(1);
+      expect(data.memberships).toEqual([]);
+      expect(data.truncated).toBe(true);
+    });
+
+    it("should flag truncated when an empty page ends pagination early", async () => {
+      const mockGet = vi
+        .fn()
+        .mockResolvedValueOnce({ data: { memberships: Array.from({ length: 100 }, (_, i) => ({ id: i })), total_count: 250 } })
+        .mockResolvedValueOnce({ data: { memberships: [], total_count: 250 } });
+      (client as any).api = { get: mockGet };
+
+      const data = await client.getProjectMemberships(5);
+      expect(mockGet).toHaveBeenCalledTimes(2);
+      expect(data.truncated).toBe(true);
+    });
+
+    it("should not flag truncated at exactly 1000 memberships", async () => {
+      const mockGet = vi.fn().mockImplementation(async () => ({
+        data: { memberships: Array.from({ length: 100 }, (_, i) => ({ id: i })), total_count: 1000 },
+      }));
+      (client as any).api = { get: mockGet };
+
+      const data = await client.getProjectMemberships(5);
+      expect(mockGet).toHaveBeenCalledTimes(10);
+      expect(data.truncated).toBe(false);
+    });
+
+    it("should use fetched count when total_count is missing", async () => {
+      const mockGet = vi.fn().mockResolvedValue({ data: { memberships: [{ id: 1 }] } });
+      (client as any).api = { get: mockGet };
+
+      const data = await client.getProjectMemberships(5);
+      expect(mockGet).toHaveBeenCalledTimes(1);
+      expect(data.total_count).toBe(1);
+      expect(data.truncated).toBe(false);
+    });
+
+    it("should reject dot-segment project ids without calling the API", async () => {
+      const mockGet = vi.fn();
+      (client as any).api = { get: mockGet };
+
+      await expect(client.getProjectMemberships("..")).rejects.toThrow("Invalid project id");
+      await expect(client.getProjectMemberships(" . ")).rejects.toThrow("Invalid project id");
+      await expect(client.getIssueCategories("..")).rejects.toThrow("Invalid project id");
+      await expect(client.getIssueCategories("")).rejects.toThrow("Invalid project id");
+      expect(mockGet).not.toHaveBeenCalled();
+    });
+
+    it("should encode project id in the path", async () => {
+      const mockGet = vi.fn().mockResolvedValue({ data: { memberships: [], total_count: 0 } });
+      (client as any).api = { get: mockGet };
+
+      await client.getProjectMemberships("../../users");
+      expect(mockGet).toHaveBeenCalledWith("/projects/..%2F..%2Fusers/memberships.json", expect.any(Object));
+    });
+  });
+
+  describe("getIssueCategories", () => {
+    it("should call GET /projects/:id/issue_categories.json and return data", async () => {
+      const payload = { issue_categories: [{ id: 1, name: "UI" }], total_count: 1 };
+      const mockGet = vi.fn().mockResolvedValue({ data: payload });
+      (client as any).api = { get: mockGet };
+
+      const data = await client.getIssueCategories("my-proj");
+      expect(mockGet).toHaveBeenCalledWith("/projects/my-proj/issue_categories.json");
+      expect(data).toEqual(payload);
+    });
+
+    it("should encode project id in the path", async () => {
+      const mockGet = vi.fn().mockResolvedValue({ data: { issue_categories: [] } });
+      (client as any).api = { get: mockGet };
+
+      await client.getIssueCategories("a/b");
+      expect(mockGet).toHaveBeenCalledWith("/projects/a%2Fb/issue_categories.json");
     });
   });
 });
