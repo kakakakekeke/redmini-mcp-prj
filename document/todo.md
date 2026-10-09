@@ -29,7 +29,8 @@ related:
 * (현재 등록된 모든 P2 작업이 완료되었습니다.)
 
 ### 🧩 기능 확장 — Redmine API 커버리지
-* (현재 등록된 모든 기능 확장 작업이 완료되었습니다.)
+- [ ] 아키텍처 및 라이브러리 도입 관련 DL/ADR 작성 여부 판단 — 클라이언트 인스턴스 스코프 캐시(전역 캐시 배제) 결정은 DL로 기록
+- [ ] `feat/custom-field-defs-cache` : `/custom_fields.json` 조회 결과를 RedmineClient 인스턴스 단위 TTL 캐시(성공 5분·401/403 10분·5xx 미캐시, 동시 호출 병합, 허용값 거부 전 1회 강제 재조회) — 비관리자 키의 반복 403 요청 제거 — [[DL-0035-issue-custom-field-values]]
 
 ### 📌 P3 — 중기 조치 (보안 감사 기반, 1개월)
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
