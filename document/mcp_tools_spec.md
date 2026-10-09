@@ -138,6 +138,7 @@ LLM(Claude/Cursor)이 불필요하게 많은 도구를 가지지 않도록(Tool 
         *   이름은 프로젝트의 `issue_custom_fields`(`get_projects` + `project_id` 로 확인) 기준으로 대소문자·공백 무시 매핑. 숫자 키는 ID 이며 해당 프로젝트에서 사용 가능한 필드여야 합니다. 모호·미존재·중복은 에러.
         *   관리자 키: `GET /custom_fields.json` 으로 목록 허용값(list·enumeration·bool, 대소문자 차이·라벨은 표준 값으로 치환), 다중 선택 여부, 트래커 활성 여부를 사전 검증. 실패 시 `{ error, custom_field_errors[{id,name,value,problem,allowed_values?}] }` 반환(API 미호출). regexp 는 ReDoS 방지를 위해 실행하지 않고 `skipped_checks` 에 패턴만 안내.
         *   비관리자 키(또는 정의 조회 실패): 사전 검증 생략, Redmine 422 메시지로 검증.
+        *   정의 캐시([[DL-0036-custom-field-defs-cache|DL-0036]]): 세션(API 키)별로 성공 결과 5분, 401/403 10분 재사용(5xx·네트워크 오류는 미캐시). 캐시된 정의로 거부하려 하면 1회 재조회해 확인합니다.
         *   `update_issue` 는 일감 상세의 `custom_fields` 에 없는 필드를 관리자 여부와 무관하게 오류로 반환. `create_issue` 는 응답에 반영되지 않은 필드를 `custom_fields_not_applied` 로 경고.
     *   미리보기에 `custom_fields: [{id, name, value}]` 와 `custom_field_validation: {performed, reason?, skipped_checks?}` 표시. 실제 페이로드는 `custom_fields: [{id, value}]`.
 *   **`update_issue` 참고:** 파라미터는 `issue_id`, `status_id`, `notes`, `custom_fields`, `dry_run`. `custom_fields` 만 있어도 유효한 업데이트이며, 프로젝트·트래커는 일감 상세에서 얻습니다(상태 검증과 1회 조회 공유).

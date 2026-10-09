@@ -1,8 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   customFieldsInputSchema,
   resolveIssueCustomFields,
   formatRedmineValidationError,
+  DEFINITIONS_CACHE_TTL_MS,
+  DEFINITIONS_DENIED_TTL_MS,
 } from "../../src/utils/issue_custom_fields";
 
 const projectFields = {
@@ -370,6 +372,304 @@ describe("resolveIssueCustomFields", () => {
       expect(r.errors[0].allowed_values).toHaveLength(100);
       expect(r.errors[0].allowed_values![0]).toBe("v0");
       expect(r.errors[0].allowed_values_truncated).toBe(true);
+    });
+  });
+});
+
+describe("custom field definitions cache (DL-0036)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** 정의에 허용값을 추가한 사본 (관리자가 새 값을 추가한 상황) */
+  function defsWithCustomer(extra: string) {
+    const copy = JSON.parse(JSON.stringify(adminDefs));
+    copy.custom_fields[0].possible_values.push({ value: extra, label: extra });
+    return copy;
+  }
+
+  it("uses TTL constants aligned with the resolver (5 min success, 10 min denied)", () => {
+    expect(DEFINITIONS_CACHE_TTL_MS).toBe(300_000);
+    expect(DEFINITIONS_DENIED_TTL_MS).toBe(600_000);
+  });
+
+  it("reuses definitions for the same client within the TTL", async () => {
+    const client = makeClient();
+    await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    const r = await resolveIssueCustomFields(client as any, 1, { "1": "B사" });
+    expect(client.getCustomFields).toHaveBeenCalledTimes(1);
+    expect(r.validation.performed).toBe(true);
+    expect(r.payload).toEqual([{ id: 1, value: "B사" }]);
+    // 프로젝트 필드 목록은 캐시하지 않는다
+    expect(client.getProject).toHaveBeenCalledTimes(2);
+  });
+
+  it("refetches definitions after the success TTL expires", async () => {
+    vi.useFakeTimers();
+    const client = makeClient();
+    await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    vi.advanceTimersByTime(DEFINITIONS_CACHE_TTL_MS - 1);
+    await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    expect(client.getCustomFields).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(1);
+    await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([401, 403])("negatively caches HTTP %i for 10 minutes", async (status) => {
+    vi.useFakeTimers();
+    const client = makeClient({ defsError: httpError(status) });
+    const first = await resolveIssueCustomFields(client as any, 1, { "1": "Z사" });
+    vi.advanceTimersByTime(DEFINITIONS_DENIED_TTL_MS - 1);
+    const second = await resolveIssueCustomFields(client as any, 1, { "1": "Z사" });
+    expect(client.getCustomFields).toHaveBeenCalledTimes(1);
+    expect(second.validation).toEqual(first.validation);
+    expect(second.validation.performed).toBe(false);
+    expect(second.validation.reason).toMatch(new RegExp(`HTTP ${status}`));
+    vi.advanceTimersByTime(1);
+    await resolveIssueCustomFields(client as any, 1, { "1": "Z사" });
+    expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["HTTP 500", httpError(500)],
+    ["HTTP 404", httpError(404)],
+    ["network error", new Error("ECONNRESET")],
+  ])("does not cache %s", async (_label, err) => {
+    const client = makeClient({ defsError: err });
+    await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not cache an unexpected response shape", async () => {
+    const client = makeClient({ defs: { nope: true } });
+    await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+  });
+
+  it("recovers after a transient failure and then caches the success", async () => {
+    const client = makeClient();
+    client.getCustomFields = vi.fn().mockRejectedValueOnce(httpError(503)).mockResolvedValue(adminDefs);
+    const a = await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    const b = await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    const c = await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    expect(a.validation.performed).toBe(false);
+    expect(b.validation.performed).toBe(true);
+    expect(c.validation.performed).toBe(true);
+    expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+  });
+
+  it("dedupes concurrent calls on the same client into one request", async () => {
+    const client = makeClient();
+    const results = await Promise.all([
+      resolveIssueCustomFields(client as any, 1, { "1": "A사" }),
+      resolveIssueCustomFields(client as any, 1, { "1": "B사" }),
+      resolveIssueCustomFields(client as any, 1, { "1": "C사" }),
+    ]);
+    expect(client.getCustomFields).toHaveBeenCalledTimes(1);
+    expect(results.every((r) => r.validation.performed)).toBe(true);
+  });
+
+  it("does not keep a failed in-flight request around", async () => {
+    const client = makeClient();
+    client.getCustomFields = vi.fn().mockRejectedValueOnce(new Error("boom")).mockResolvedValue(adminDefs);
+    const [a, b] = await Promise.all([
+      resolveIssueCustomFields(client as any, 1, { "1": "A사" }),
+      resolveIssueCustomFields(client as any, 1, { "1": "A사" }),
+    ]);
+    expect(a.validation.performed).toBe(false);
+    expect(b.validation.performed).toBe(false);
+    expect(client.getCustomFields).toHaveBeenCalledTimes(1);
+    const c = await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+    expect(c.validation.performed).toBe(true);
+    expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+  });
+
+  it("bounds the cached entry: at most 1000 definitions and regexp capped to 1024 chars (security L3)", async () => {
+    const many = Array.from({ length: 1200 }, (_, i) => ({
+      id: 1000 + i, customized_type: "issue", field_format: "string", multiple: false,
+    }));
+    const project = { project: { id: 1, issue_custom_fields: [{ id: 2, name: "R" }, { id: 2199, name: "Late" }] } };
+    const client = makeClient({
+      project,
+      defs: { custom_fields: [{ id: 2, customized_type: "issue", field_format: "string", regexp: "a".repeat(5000) }, ...many] },
+    });
+    const r = await resolveIssueCustomFields(client as any, 1, { "2": "x", "2199": "y" });
+    const regexpNote = r.validation.skipped_checks?.find((s) => s.check === "regexp");
+    expect(regexpNote?.regexp?.length).toBeLessThanOrEqual(1025);
+    expect(regexpNote?.regexp?.endsWith("…")).toBe(true);
+    // 상한(1000개) 밖의 정의는 저장하지 않으므로 정의 없음으로 처리된다
+    expect(r.validation.skipped_checks).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 2199, check: "definition" })])
+    );
+  });
+
+  it("isolates caches between client instances (one API key each)", async () => {
+    const admin = makeClient();
+    const nonAdmin = makeClient({ defsError: httpError(403) });
+    await resolveIssueCustomFields(admin as any, 1, { "1": "A사" });
+    const r = await resolveIssueCustomFields(nonAdmin as any, 1, { "1": "Z사" });
+    expect(nonAdmin.getCustomFields).toHaveBeenCalledTimes(1);
+    expect(r.validation.performed).toBe(false);
+    expect(r.errors).toEqual([]);
+    const again = await resolveIssueCustomFields(admin as any, 1, { "1": "Z사" });
+    expect(again.errors).toHaveLength(1);
+    expect(admin.getCustomFields).toHaveBeenCalledTimes(2); // 캐시 1회 + 거부 전 강제 재조회 1회
+  });
+
+  describe("forced refetch before rejecting with cached definitions", () => {
+    it("passes when the refetched definitions now include the value", async () => {
+      const client = makeClient();
+      client.getCustomFields = vi.fn().mockResolvedValueOnce(adminDefs).mockResolvedValue(defsWithCustomer("D사"));
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const r = await resolveIssueCustomFields(client as any, 1, { "1": "d사" });
+      expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+      expect(r.errors).toEqual([]);
+      expect(r.payload).toEqual([{ id: 1, value: "D사" }]);
+      expect(r.validation.performed).toBe(true);
+      // 재조회 결과가 캐시에 반영된다
+      await resolveIssueCustomFields(client as any, 1, { "1": "D사" });
+      expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+    });
+
+    it("still rejects after exactly one refetch when the value remains invalid", async () => {
+      const client = makeClient();
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const r = await resolveIssueCustomFields(client as any, 1, { "1": "Z사", "3": ["웹", "없음"] });
+      expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+      expect(r.errors.map((e) => e.id)).toEqual([1, 3]);
+      expect(r.errors[0].allowed_values).toEqual(["A사", "B사", "C사"]);
+      // 다음 호출은 캐시를 쓰므로 다시 1회만 재조회한다
+      const again = await resolveIssueCustomFields(client as any, 1, { "1": "Z사" });
+      expect(again.errors).toHaveLength(1);
+      expect(client.getCustomFields).toHaveBeenCalledTimes(3);
+    });
+
+    it("refetches for tracker and multiple-value violations too", async () => {
+      const client = makeClient();
+      const enabled = JSON.parse(JSON.stringify(adminDefs));
+      enabled.custom_fields[0].trackers.push({ id: 3, name: "지원" });
+      client.getCustomFields = vi.fn().mockResolvedValueOnce(adminDefs).mockResolvedValue(enabled);
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const r = await resolveIssueCustomFields(client as any, 1, { "1": "A사" }, { trackerId: 3 });
+      expect(r.errors).toEqual([]);
+      expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+
+      const multi = await resolveIssueCustomFields(client as any, 1, { "1": ["A사", "B사"] });
+      expect(multi.errors).toHaveLength(1);
+      expect(client.getCustomFields).toHaveBeenCalledTimes(3);
+    });
+
+    it("does not refetch when the definitions were fetched by this call", async () => {
+      const client = makeClient();
+      const r = await resolveIssueCustomFields(client as any, 1, { "1": "Z사" });
+      expect(r.errors).toHaveLength(1);
+      expect(client.getCustomFields).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not refetch for non-definition errors (field not available on the issue)", async () => {
+      const client = makeClient();
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const r = await resolveIssueCustomFields(client as any, 1, { "2": "REQ-1" }, { applicableFieldIds: [1] });
+      expect(r.errors).toHaveLength(1);
+      expect(client.getCustomFields).toHaveBeenCalledTimes(1);
+    });
+
+    it("falls back to Redmine validation when the forced refetch is denied", async () => {
+      const client = makeClient();
+      client.getCustomFields = vi.fn().mockResolvedValueOnce(adminDefs).mockRejectedValue(httpError(403));
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const r = await resolveIssueCustomFields(client as any, 1, { "1": "Z사" });
+      expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+      expect(r.errors).toEqual([]);
+      expect(r.validation.performed).toBe(false);
+      expect(r.validation.reason).toMatch(/HTTP 403/);
+      expect(r.payload).toEqual([{ id: 1, value: "Z사" }]);
+      // 거부 결과(403)도 음성 캐시된다
+      await resolveIssueCustomFields(client as any, 1, { "1": "Z사" });
+      expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+      ["HTTP 500", () => httpError(500)],
+      ["network error", () => new Error("ECONNRESET")],
+    ])("degrades and drops the cache when the forced refetch fails with %s (review L4)", async (_label, mkErr) => {
+      const client = makeClient();
+      client.getCustomFields = vi.fn().mockResolvedValueOnce(adminDefs).mockRejectedValueOnce(mkErr()).mockResolvedValue(adminDefs);
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const r = await resolveIssueCustomFields(client as any, 1, { "1": "Z사" });
+      expect(r.errors).toEqual([]);
+      expect(r.validation.performed).toBe(false);
+      // 실패한 재조회는 캐시하지 않고 기존 성공 캐시도 무효화한다 → 다음 호출은 다시 조회
+      const next = await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      expect(next.validation.performed).toBe(true);
+      expect(client.getCustomFields).toHaveBeenCalledTimes(3);
+    });
+
+    it("degrades when the forced refetch returns an unexpected shape (review L4)", async () => {
+      const client = makeClient();
+      client.getCustomFields = vi.fn().mockResolvedValueOnce(adminDefs).mockResolvedValue({ nope: true });
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const r = await resolveIssueCustomFields(client as any, 1, { "1": "Z사" });
+      expect(r.errors).toEqual([]);
+      expect(r.validation.performed).toBe(false);
+      expect(r.validation.reason).toMatch(/Unexpected/);
+    });
+
+    it("merges concurrent forced refetches into one request (review L4)", async () => {
+      const client = makeClient();
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const results = await Promise.all([
+        resolveIssueCustomFields(client as any, 1, { "1": "Z사" }),
+        resolveIssueCustomFields(client as any, 1, { "1": "Y사" }),
+        resolveIssueCustomFields(client as any, 1, { "1": "X사" }),
+      ]);
+      expect(results.every((r) => r.errors.length === 1)).toBe(true);
+      expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+    });
+
+    it("cleans up a failed forced in-flight request shared by concurrent callers (review L4)", async () => {
+      const client = makeClient();
+      client.getCustomFields = vi.fn().mockResolvedValueOnce(adminDefs).mockRejectedValueOnce(httpError(502)).mockResolvedValue(adminDefs);
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const [a, b] = await Promise.all([
+        resolveIssueCustomFields(client as any, 1, { "1": "Z사" }),
+        resolveIssueCustomFields(client as any, 1, { "1": "Y사" }),
+      ]);
+      expect(a.validation.performed).toBe(false);
+      expect(b.validation.performed).toBe(false);
+      expect(client.getCustomFields).toHaveBeenCalledTimes(2);
+      const c = await resolveIssueCustomFields(client as any, 1, { "1": "Z사" });
+      expect(c.validation.performed).toBe(true);
+      expect(c.errors).toHaveLength(1);
+      expect(client.getCustomFields).toHaveBeenCalledTimes(3);
+    });
+
+    it("uses cached definitions for passing values even if the key lost admin rights (accepted risk, security L1)", async () => {
+      const client = makeClient();
+      client.getCustomFields = vi.fn().mockResolvedValueOnce(adminDefs).mockRejectedValue(httpError(403));
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const r = await resolveIssueCustomFields(client as any, 1, { "2": "REQ-1" });
+      expect(client.getCustomFields).toHaveBeenCalledTimes(1);
+      expect(r.validation.performed).toBe(true);
+      expect(r.validation.skipped_checks).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: 2, check: "regexp", regexp: "^REQ-[0-9]+$" })])
+      );
+    });
+
+    it("keeps canonical values from the refetched definitions only (no mixing with stale ones)", async () => {
+      const client = makeClient();
+      client.getCustomFields = vi.fn().mockResolvedValueOnce(adminDefs).mockResolvedValue(defsWithCustomer("D사"));
+      await resolveIssueCustomFields(client as any, 1, { "1": "A사" });
+      const r = await resolveIssueCustomFields(client as any, 1, { "1": "D사", "3": ["api"], "4": "high" });
+      expect(r.errors).toEqual([]);
+      expect(r.payload).toEqual([
+        { id: 1, value: "D사" },
+        { id: 3, value: ["API"] },
+        { id: 4, value: "11" },
+      ]);
     });
   });
 });
