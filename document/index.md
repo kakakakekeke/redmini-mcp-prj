@@ -12,6 +12,8 @@ aliases:
   - Document Index
   - 문서 인덱스
 status: active
+related:
+  - "[[index]]"
 ---
 
 # Redmine MCP 프로젝트 문서 인덱스 (Agent Document Registry)
@@ -36,7 +38,7 @@ status: active
 | **[[decision_log_template]]** | `템플릿`, `DL`, `결정로그` | • 새로운 실무 결정 로그(DL) 문서 작성 시 | 일상적 운영/실무 결정 로그 템플릿 |
 | **[[vibe_tdd_sop]]** | `SOP`, `TDD`, `바이브코딩`, `프로세스` | • Vibe TDD 기능 개발 및 테스트 사이클 진행 시 | Vibe TDD 워크플로우를 위한 표준 운영 절차서 |
 | **[[0001-initial-architecture]]** | `ADR`, `아키텍처결정` | • 시스템 아키텍처, 굵직한 기술 스택 변경 시 | ADR-0001: Redmine MCP 서버 초기 아키텍처 결정 |
-| **[[0002-test-architecture\|document/adr/0002-test-architecture.md]]** | `ADR`, `테스트`, `아키텍처`, `TDD`, `Mocking`, `MSW` | • 단위/통합/E2E 테스트 계층 구분 확인 시<br>• 모킹(Mock) 전략 및 피라미드 구조 참조 시 | ADR-0002: 테스트 피라미드 및 Mocking 전략 정의 |
+| **[[0002-test-architecture\|document/adr/0002-test-architecture.md]]** | `ADR`, `테스트`, `아키텍처`, `TDD`, `Mocking`, `MSW` | • 단위/통합/E2E 테스트 계층 구분 확인 시<br>• 모킹(Mock) 전략 및 피라미드 구조 참조 시 | ADR-0002: 테스트 피라미드 및 Mocking 전략 정의 (⚠️ ADR-0005로 대체됨) |
 | **[[0003-write-feature-safety-model\|document/adr/0003-write-feature-safety-model.md]]** | `ADR`, `쓰기`, `write`, `보안`, `dry_run`, `guard`, `allowed_statuses` | • 쓰기 기능(add_issue_note, create_issue, update_issue) 보안 모델 확인 시<br>• dry_run 가드 및 allowed_statuses 워크플로우 보호 로직 구현 시 | ADR-0003: 2단계 쓰기 기능 보안 모델 및 dry_run 가드 전략 |
 | **[[DL-0001-vitest]]** | `DL`, `결정로그`, `운영`, `실무결정` | • 코딩 컨벤션, 라이브러리 교체 등 실무적 결정 기록 시 | DL-0001: TDD 테스트 러너로 Vitest 채택 |
 | **[[DL-0002-boost-agent-workflow|document/decision_log/DL-0002-boost-agent-workflow.md]]** | `DL`, `boost`, `다중에이전트`, `무한루프`, `husky` | • /boost 모드 성과 확인 및 훅(Hook) 정책 완화 배경 참조 시 | DL-0002: /boost 모드 성과 및 다중 에이전트 워크플로우 결정 |
@@ -73,6 +75,8 @@ status: active
 | **[[DL-0026-get-projects-security-hardening|document/decision_log/DL-0026-get-projects-security-hardening.md]]** | `DL`, `보안`, `경로조작`, `path-traversal`, `get_projects`, `인코딩`, `리졸버캐시` | • get_projects 도구 경로 조작 방어 및 404/403 예외 처리 확인 시<br>• SmartNameResolver 인스턴스 TTL 캐시 보존 정책 참조 시 | DL-0026: get_projects 도구 및 getProject API 보안 강화 (경로 조작 방어, 리졸버 캐시 보존, 예외 복원력) |
 | **[[DL-0027-claude-code-support|document/decision_log/DL-0027-claude-code-support.md]]** | `DL`, `claude-code`, `훅`, `hooks`, `worktree`, `서브에이전트`, `CLAUDE.md`, `antigravity` | • Claude Code에서 작업하거나 `.claude/` 훅·스킬·서브에이전트를 수정할 때<br>• Antigravity ↔ Claude Code 가드레일 대응 관계 확인 시 | DL-0027: Antigravity 설정을 유지한 채 Claude Code 훅·스킬·리뷰어 에이전트 레이어 병행 도입 |
 | **[[DL-0028-agent-rules-hardening|document/decision_log/DL-0028-agent-rules-hardening.md]]** | `DL`, `가드레일`, `husky`, `pre-commit`, `pre-merge-commit`, `hooksPath`, `main_allowlist`, `병합`, `todo소유권` | • main 허용 경로·병합 커밋 검사·훅 설치 방식을 확인하거나 변경할 때<br>• todo.md 완료 처리 주체(메인 세션) 규칙 확인 시 | DL-0028: 워크트리 훅 미실행·병합 검사 누락 수정, 허용 경로 단일화(`.agents/main_allowlist`), pre-commit tsc, todo.md 메인 세션 전담 (DL-0008 대체) |
+| **[[DL-0029-agent-rules-cleanup|document/decision_log/DL-0029-agent-rules-cleanup.md]]** | `DL`, `TDD`, `리뷰등급`, `R0`, `R1`, `R2`, `커버리지`, `coverage`, `frontmatter`, `브랜치네이밍`, `AGENTS.md` | • 리뷰어 호출 범위(R0~R2) 판단 시<br>• 커버리지 기준선·frontmatter 검사·브랜치 네이밍 규칙 확인 시 | DL-0029: 낡은 규칙 정리(도구 원칙, dry_run, 브랜치 네이밍, 인덱스 검사) 및 TDD 효율화(리뷰 등급화, 커버리지 래칫, 테스트 누락 경고, DL 조건 축소) |
+| **[[0005-test-architecture-revision|document/adr/0005-test-architecture-revision.md]]** | `ADR`, `테스트`, `아키텍처`, `tests/tools`, `e2e`, `스텁`, `커버리지`, `기준선` | • 테스트 파일 위치·모킹 방식 결정 시<br>• 커버리지 기준선 조정 시 | ADR-0005: ADR-0002 대체 — 실제 테스트 구조(DI 스텁, Express 모의 서버) 공식화 및 커버리지 기준선 도입 |
 
 
 ---

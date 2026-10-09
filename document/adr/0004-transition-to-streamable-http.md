@@ -9,6 +9,10 @@ tags:
   - mcp
   - streamable-http
   - stdio
+aliases:
+  - 0004-transition-to-streamable-http
+related:
+  - "[[index]]"
 ---
 
 # ADR-0004: 레거시 SSE 전송 계층 폐기 및 Streamable HTTP 전송 계층 채택

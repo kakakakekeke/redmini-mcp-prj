@@ -12,6 +12,10 @@ related:
   - "[[security_audit_report]]"
   - "[[DL-0020-http-auth-middleware]]"
   - "[[architecture_design]]"
+updated: 2026-09-21
+aliases:
+  - DL-0024-disable-http-server-key-fallback
+status: active
 ---
 
 # DL-0024: HTTP 모드 REDMINE_API_KEY 서버 키 폴백 완전 차단

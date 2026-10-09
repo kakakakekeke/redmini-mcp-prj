@@ -11,6 +11,8 @@ tags:
 aliases:
   - Tool Spec
 status: draft
+related:
+  - "[[index]]"
 ---
 
 # Redmine MCP 서버 도구(Tool) 명세서

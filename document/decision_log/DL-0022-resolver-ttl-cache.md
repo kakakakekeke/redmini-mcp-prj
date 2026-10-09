@@ -11,6 +11,10 @@ tags:
 related:
   - "[[security_audit_report]]"
   - "[[architecture_design]]"
+updated: 2026-09-21
+aliases:
+  - DL-0022-resolver-ttl-cache
+status: active
 ---
 
 # DL-0022: SmartNameResolver TTL 인메모리 캐시 적용

@@ -6,6 +6,10 @@ status: [Proposed | Accepted | Deprecated | Superseded]
 tags:
   - adr
   - architecture
+aliases:
+  - ADR-[NNNN]
+related:
+  - "[[관련 문서명]]"
 ---
 
 # ADR-[NNNN]: [결정 사항 요약]

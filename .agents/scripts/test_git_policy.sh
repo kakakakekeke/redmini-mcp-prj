@@ -1,7 +1,7 @@
 #!/bin/bash
 # Git 훅 정책(pre-commit / pre-merge-commit / commit-msg / main 허용 경로 / 훅 설치) 검증 스위트.
 # 현재 작업 트리의 훅·정책 파일을 임시 복제 저장소에 적용해 실제 커밋·병합으로 검증한다.
-# 주의: 복제 원본은 메인 체크아웃의 HEAD 이며 node_modules 는 메인 저장소의 것을 공유한다.
+# 주의: 복제 원본은 메인 체크아웃의 HEAD 이며 node_modules 는 실행 중인 트리의 것을 공유한다.
 SRC="$(cd "$(dirname "$0")/../.." && pwd -P)"
 MAIN=$(cd "$SRC" && cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
 SANDBOX=$(cd "$(mktemp -d)" && pwd -P)
@@ -21,14 +21,18 @@ expect() {
   esac
 }
 # 픽스처 커밋: 훅을 거치지 않는 plumbing (사람이 만든 임의 상태를 재현하기 위함)
+# 규약(AGENTS.md 3장)을 만족하는 frontmatter
+fm() { printf -- '---\ntitle: "%s"\ncreated: 2026-10-09\nupdated: 2026-10-09\ntags:\n  - test\naliases:\n  - %s\nstatus: active\nrelated:\n  - "[[index]]"\n---\n\n# %s\n' "$1" "$1" "$1"; }
 fixture_commit() { git add -A && git update-ref HEAD "$(git commit-tree "$(git write-tree)" -p HEAD -m "$1")"; }
-new_worktree() { git -C "$R" worktree add -q "$R/.worktrees/$1" -b "$2" && ln -s "$MAIN/node_modules" "$R/.worktrees/$1/node_modules"; }
+new_worktree() { git -C "$R" worktree add -q "$R/.worktrees/$1" -b "$2" && ln -s "$SRC/node_modules" "$R/.worktrees/$1/node_modules"; }
 
 R="$SANDBOX/repo"
 git clone -q "$MAIN" "$R" && cd "$R" || exit 1
 git config user.email t@t && git config user.name t
-ln -s "$MAIN/node_modules" node_modules
-for p in .husky .agents .gitignore AGENTS.md vitest.config.ts package.json; do rm -rf "$R/$p"; cp -R "$SRC/$p" "$R/$p"; done
+ln -s "$SRC/node_modules" node_modules
+for p in .husky .agents .gitignore AGENTS.md vitest.config.ts package.json document; do rm -rf "$R/$p"; cp -R "$SRC/$p" "$R/$p"; done
+# 병합 전 메인 세션이 todo.md frontmatter 를 보완하는 운영 절차(DL-0029)를 재현
+grep -q '^aliases:' document/todo.md || awk 'NR>1 && /^---$/ && !d { print "aliases:\n  - todo\nstatus: active\nrelated:\n  - \"[[index]]\""; d=1 } { print }' document/todo.md > "$SANDBOX/todo.tmp" && mv "$SANDBOX/todo.tmp" document/todo.md
 fixture_commit "chore(test): apply working tree policy"
 
 echo "📂 훅 설치 (install_git_hooks.sh)"
@@ -52,15 +56,25 @@ for p in .husky/pre-commit .agents/scripts/x.sh src/index.ts CLAUDE.md AGENTS.md
 done
 
 echo "📂 main 직접 커밋"
-echo "# sop" > document/sop/zz_test.md && echo "| **[[zz_test]]** |" >> document/index.md
+fm zz_test > document/sop/zz_test.md && echo "| **[[zz_test]]** |" >> document/index.md
 git add document/sop/zz_test.md document/index.md
 expect "main: document/sop 문서 커밋 허용" pass git commit -qm "docs(sop): add test sop
 
 [Impact-Reviewed]"
-echo "# 한글" > "document/한글_문서.md" && echo "| **[[한글_문서]]** |" >> document/index.md; git add -A document
+fm 한글_문서 > "document/한글_문서.md" && echo "| **[[한글_문서]]** |" >> document/index.md; git add -A document
 expect "main: 한글 파일명 문서 커밋 허용 (quotePath)" pass git commit -qm "docs(ko): add korean doc
 
 [Impact-Reviewed]"
+printf '# no frontmatter\n' > document/sop/zz_nofm.md && echo "| **[[zz_nofm]]** |" >> document/index.md; git add document/sop/zz_nofm.md document/index.md
+expect "main: frontmatter 필수 필드 누락 문서 커밋 차단" "fail:frontmatter" git commit -qm "docs(sop): no fm
+
+[Impact-Reviewed]"
+git reset -q --hard; rm -f document/sop/zz_nofm.md
+fm zz_partial | grep -v '^aliases:\|^  - zz_partial' > document/sop/zz_partial.md && echo "| **[[zz_partial]]** |" >> document/index.md; git add document/sop/zz_partial.md document/index.md
+expect "main: frontmatter 일부 필드(aliases) 누락 차단" "fail:aliases" git commit -qm "docs(sop): partial fm
+
+[Impact-Reviewed]"
+git reset -q --hard; rm -f document/sop/zz_partial.md
 echo "# x" >> .husky/commit-msg; git add .husky/commit-msg
 expect "main: .husky 커밋 차단" "fail:main_allowlist" git commit -qm "chore(husky): weaken
 
@@ -91,7 +105,35 @@ expect "worktree: 훅 실행됨 (잘못된 커밋 메시지 차단)" "fail:커�
 echo 'export const n: number = "str";' > src/zz_probe.ts; git add src/zz_probe.ts
 expect "branch: 타입 에러 커밋 차단 (tsc)" "fail:타입 검사" git commit -qm "feat(probe): bad types"
 echo 'export const n: number = 1;' > src/zz_probe.ts; git add src/zz_probe.ts
-expect "branch: 정상 커밋 허용" pass git commit -qm "feat(probe): good types"
+out=$(git commit -qm "feat(probe): good types" 2>&1); rc=$?
+[ $rc -eq 0 ] && ok "branch: 정상 커밋 허용" || bad "branch: 정상 커밋 실패 (rc=$rc)" "$out"
+echo "$out" | grep -q "Test Warning" && ok "branch: src 변경에 테스트 변경이 없으면 경고" || bad "테스트 누락 경고 없음" "$out"
+echo 'export const m: number = 2;' >> src/zz_probe.ts; mkdir -p tests/unit
+printf "import { it, expect } from 'vitest';\nimport { m } from '../../src/zz_probe.js';\nit('m', () => expect(m).toBe(2));\n" > tests/unit/zz_probe.test.ts
+git add src/zz_probe.ts tests/unit/zz_probe.test.ts
+out=$(git commit -qm "feat(probe): with test" 2>&1); rc=$?
+[ $rc -eq 0 ] && ! echo "$out" | grep -q "Test Warning" && ok "branch: src + 테스트 함께 변경 시 경고 없음" || bad "테스트 동반 커밋 (rc=$rc)" "$out"
+for i in $(seq 1 40); do echo "export function zzUncovered$i(x: number): number { if (x > 0) { return x * $i; } return -x; }"; done > src/zz_uncovered.ts
+git add src/zz_uncovered.ts
+expect "branch: 커버리지 기준선 미달 커밋 차단" "fail:does not meet .*threshold" git commit -qm "feat(probe): uncovered code"
+git reset -q --hard; rm -f src/zz_uncovered.ts
+printf '/* v8 ignore start */\nexport function zzIgnored(): number { return 1; }\n/* v8 ignore stop */\n' > src/zz_ignored.ts; git add src/zz_ignored.ts
+expect "branch: 커버리지 무시 주석 추가 차단" "fail:커버리지 무시" git commit -qm "feat(probe): ignore coverage"
+git reset -q --hard; rm -f src/zz_ignored.ts
+sed -i '' 's/statements: 84/statements: 0/' vitest.config.ts
+echo 'export const k: number = 3;' >> src/zz_probe.ts; git add src/zz_probe.ts
+expect "branch: 스테이징 안 된 설정 파일 변경 상태로 커밋 차단" "fail:스테이징되지 않은" git commit -qm "feat(probe): unstaged config"
+git reset -q --hard
+fm zz_wt > document/zz_wt.md && printf '# no fm\n' > document/zz_wt_bad.md
+printf '| **[[zz_wt]]** |\n| **[[zz_wt_bad]]** |\n' >> document/index.md; git add document
+expect "branch(워크트리): frontmatter 누락 문서 차단" "fail:zz_wt_bad" git commit -qm "docs(x): wt fm
+
+[Impact-Reviewed]"
+git reset -q --hard; rm -f document/zz_wt.md document/zz_wt_bad.md
+fm zz_crlf | sed 's/$/\r/' > document/zz_crlf.md && echo "| **[[zz_crlf]]** |" >> document/index.md; git add document
+expect "branch: CRLF 문서도 frontmatter 정상 인식" pass git commit -qm "docs(x): crlf
+
+[Impact-Reviewed]"
 sed -i '' '/^### 🚨 P1/a\
 1. [ ] `feat/probe` : 설명에 `백틱` 이 여러 개 `있는` 항목
 ' document/todo.md
@@ -102,9 +144,21 @@ git checkout -q --detach
 expect "detached HEAD: 정상 커밋 허용" pass git commit -q --allow-empty -m "test(probe): detached"
 git checkout -q feat/probe
 
+# 커버리지 provider 가 없는 node_modules 로 커밋하면 'npm install' 안내로 차단
+mkdir -p "$SANDBOX/nm_nocov/.bin" "$SANDBOX/nm_nocov/@vitest"
+for e in "$SRC"/node_modules/* "$SRC"/node_modules/.bin; do ln -s "$e" "$SANDBOX/nm_nocov/$(basename "$e")" 2>/dev/null; done
+rm -f "$SANDBOX/nm_nocov/@vitest"; mkdir -p "$SANDBOX/nm_nocov/@vitest"
+for e in "$SRC"/node_modules/@vitest/*; do [ "$(basename "$e")" = coverage-v8 ] || ln -s "$e" "$SANDBOX/nm_nocov/@vitest/"; done
+rm node_modules && ln -s "$SANDBOX/nm_nocov" node_modules
+expect "branch: 커버리지 provider 미설치 시 npm install 안내" "fail:npm install" git commit -q --allow-empty -m "test(probe): nocov"
+rm node_modules && ln -s "$SRC/node_modules" node_modules
+
 echo "📂 commit-msg 코어 파일"
-for f in .husky/pre-commit .claude/settings.json CLAUDE.md .mcp.json .agents/main_allowlist; do
-  mkdir -p "$(dirname "$f")"; echo "# probe" >> "$f"; git add "$f"
+for f in .husky/pre-commit .claude/settings.json CLAUDE.md .mcp.json .agents/main_allowlist vitest.config.ts; do
+  mkdir -p "$(dirname "$f")"
+  case "$f" in *.ts|*.json) ;; *) echo "# probe" >> "$f" ;; esac
+  case "$f" in *.ts) echo "// probe" >> "$f" ;; *.json) printf '\n' >> "$f" ;; esac
+  git add "$f"
   expect "코어 파일 $f: 태그 없으면 차단" "fail:Impact-Reviewed" git commit -qm "chore(core): touch"
   expect "코어 파일 $f: [Impact-Reviewed] 있으면 허용" pass git commit -qm "chore(core): touch
 

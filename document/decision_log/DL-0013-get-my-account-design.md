@@ -12,6 +12,10 @@ related:
   - "[[index]]"
   - "[[redmine_api_specification]]"
   - "[[DL-0008-subagent-todo-completion-enforcement]]"
+updated: 2026-09-20
+aliases:
+  - DL-0013-get-my-account-design
+status: active
 ---
 
 # DL-0013: 내 계정 정보 조회(get_my_account) 도구 및 Fallback 설계

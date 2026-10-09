@@ -16,6 +16,8 @@ related:
   - "[[index]]"
   - "[[setup_and_deployment]]"
   - "[[architecture_design]]"
+aliases:
+  - DL-0012-docker-deployment
 ---
 
 # DL-0012: Dockerfile 멀티 스테이지 빌드 및 컨테이너 배포 환경 구축

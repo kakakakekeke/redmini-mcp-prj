@@ -64,6 +64,28 @@ if [ "$GIT_DIR" = "$GIT_COMMON_DIR" ] && [ $IS_MERGE -ne 2 ]; then
     fi
 fi
 
+# 1-1. 문서 frontmatter 필수 필드 검사 (AGENTS.md 3장) — 이번 커밋에서 추가·수정된 document/ 마크다운만 대상
+REQUIRED_FM="title created updated tags aliases status related"
+FM_ERRORS=$(git -c core.quotePath=false diff --cached --name-only --no-renames --diff-filter=AM -- 'document/*.md' | while IFS= read -r DOC; do
+    case "$DOC" in (document/.obsidian/*) continue ;; esac
+    if ! RAW=$(git show ":$DOC" 2>/dev/null); then
+        echo "$DOC (파일을 읽을 수 없음 — 파일명에 따옴표·역슬래시를 쓰지 마세요)"; continue
+    fi
+    # CRLF 허용, 여는/닫는 '---' 뒤 공백 허용, 닫는 '---' 가 없으면 frontmatter 없음으로 취급
+    FM=$(printf '%s\n' "$RAW" | awk '{ sub(/\r$/, "") } NR==1 { if ($0 !~ /^---[[:space:]]*$/) exit; next } /^---[[:space:]]*$/ { closed=1; exit } { buf = buf $0 "\n" } END { if (closed) printf "%s", buf }')
+    MISSING=""
+    for KEY in $REQUIRED_FM; do
+        printf '%s\n' "$FM" | grep -q "^$KEY:" || MISSING="$MISSING $KEY"
+    done
+    if [ -n "$MISSING" ]; then echo "$DOC (누락:$MISSING)"; fi   # sh -e 에서 && 단락 평가로 종료되지 않도록 if 사용
+done)
+if [ -n "$FM_ERRORS" ]; then
+    echo "❌ [Error] 문서 frontmatter 필수 필드($REQUIRED_FM)가 누락되었습니다:"
+    printf '%s\n' "$FM_ERRORS" | sed 's/^/   - /'
+    echo "document/templates/ 의 템플릿을 참고해 frontmatter 를 보완하세요."
+    exit 1
+fi
+
 # 2. document/index.md 동기화 검사
 if [ -f ".agents/scripts/enforce_document_index.sh" ]; then
     OUTPUT=$(.agents/scripts/enforce_document_index.sh << 'INPUT'
@@ -75,6 +97,23 @@ INPUT
         echo "$OUTPUT"
         exit 1
     fi
+fi
+
+# 2-1. 검사 설정 파일은 스테이징된 내용과 작업 트리가 같아야 한다.
+#      tsc·테스트는 작업 트리 기준으로 실행되므로, 스테이징하지 않은 설정 변경(기준선 하향 등)으로 통과하는 것을 막는다.
+UNSTAGED_CFG=$(git -c core.quotePath=false diff --name-only -- package.json tsconfig.json 'vitest.config.*' 2>/dev/null || true)
+if [ -n "$UNSTAGED_CFG" ]; then
+    echo "❌ [Error] 스테이징되지 않은 검사 설정 변경이 있습니다. 함께 커밋하거나 되돌리세요:"
+    printf '%s\n' "$UNSTAGED_CFG" | sed 's/^/   - /'
+    exit 1
+fi
+
+# 2-2. 커버리지 무시 주석 추가 차단 — 기준선을 주석으로 우회하는 것을 막는다 (DL-0029)
+IGNORED=$(git diff --cached -U0 --no-renames -- 'src/*.ts' | grep -E '^\+.*(v8|c8|istanbul)[[:space:]]+ignore' || true)
+if [ -n "$IGNORED" ]; then
+    echo "❌ [Error] 커버리지 무시 주석 추가가 감지되었습니다. 테스트를 작성하거나, 불가피하면 vitest.config.ts 기준선 조정을 DL 로 남기세요:"
+    printf '%s\n' "$IGNORED" | head -5 | sed 's/^/   /'
+    exit 1
 fi
 
 # 3. TypeScript 타입 검사 (vitest 는 타입 에러를 잡지 않는다). 설정 파일을 지워 건너뛰는 것을 막기 위해 fail-closed.
@@ -98,10 +137,23 @@ if ! grep -q '"test":' package.json; then
     echo "❌ [Error] package.json 에 test 스크립트가 없어 단위 테스트를 수행할 수 없습니다."
     exit 1
 fi
+if grep -q -- '--coverage' package.json && [ ! -d node_modules/@vitest/coverage-v8 ]; then
+    echo "❌ [Error] 커버리지 provider(@vitest/coverage-v8)가 설치되어 있지 않습니다. 'npm install' 후 다시 커밋하세요."
+    exit 1
+fi
 echo "🧪 단위 테스트를 실행합니다..."
 if ! npm test > /dev/null; then
     echo "❌ [Error] 단위 테스트가 실패했습니다. 테스트 실패 원인을 분석하고 코드를 수정한 후 커밋하세요."
     exit 1
+fi
+
+# 4-1. 테스트 동반 여부 경고 — src 를 바꿨는데 테스트 변경이 없으면 알린다 (차단하지 않음, DL-0029)
+if [ $IS_MERGE -eq 0 ]; then
+    STAGED=$(staged_files)
+    SRC_CHANGED=$(git -c core.quotePath=false diff --cached --name-only --no-renames --diff-filter=AM -- 'src/*.ts' 'src/*.mts' | grep -v '\.d\.ts$' || true)
+    if [ -n "$SRC_CHANGED" ] && ! printf '%s\n' "$STAGED" | grep -Eq '\.(test|spec)\.m?ts$'; then
+        echo "⚠️ [Test Warning] src/ 가 변경되었지만 테스트 변경이 없습니다. TDD 1단계(실패하는 테스트 먼저)를 건너뛰지 않았는지 확인하세요. (순수 리팩터링이면 무시)"
+    fi
 fi
 
 # 5. 대기열(todo.md) 경고 — 차단하지 않음 (DL-0002)

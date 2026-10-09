@@ -8,6 +8,12 @@ tags:
   - filters
   - redmine-api
   - mcp
+updated: 2026-09-21
+aliases:
+  - DL-0017-search-issues-full-filters-design
+status: active
+related:
+  - "[[index]]"
 ---
 
 # DL-0017: Redmine 이슈 검색(search_issues) REST API 전수 필터 지원 설계

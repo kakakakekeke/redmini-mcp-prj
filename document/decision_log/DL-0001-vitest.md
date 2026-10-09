@@ -6,6 +6,12 @@ tags:
   - decision-log
   - testing
   - tdd
+updated: 2026-09-19
+aliases:
+  - DL-0001-vitest
+status: active
+related:
+  - "[[index]]"
 ---
 
 # DL-0001: TDD 테스트 러너로 Vitest 채택

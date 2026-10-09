@@ -11,6 +11,10 @@ tags:
 related:
   - "[[security_audit_report]]"
   - "[[architecture_design]]"
+updated: 2026-09-21
+aliases:
+  - DL-0020-http-auth-middleware
+status: active
 ---
 
 # DL-0020: HTTP Bearer 인증 미들웨어 및 서버 키 폴백 제어

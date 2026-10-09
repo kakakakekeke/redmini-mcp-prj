@@ -5,6 +5,11 @@ updated: 2026-MM-DD
 version: 1.0
 tags:
   - sop
+aliases:
+  - "SOP 별칭"
+status: active  # active | superseded | deprecated
+related:
+  - "[[관련 문서명]]"
 ---
 
 # 표준 운영 절차 (SOP): [SOP 제목]

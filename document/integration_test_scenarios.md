@@ -6,6 +6,11 @@ tags:
   - test
   - uat
   - qa
+aliases:
+  - integration_test_scenarios
+status: active
+related:
+  - "[[index]]"
 ---
 
 # 통합 테스트 시나리오 및 결과서 (Integration Test Scenarios)

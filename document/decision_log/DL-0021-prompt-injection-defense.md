@@ -10,6 +10,10 @@ tags:
 related:
   - "[[security_audit_report]]"
   - "[[DL-0019-add-issue-note-dry-run]]"
+updated: 2026-09-21
+aliases:
+  - DL-0021-prompt-injection-defense
+status: active
 ---
 
 # DL-0021: 간접 프롬프트 주입(Prompt Injection) 의심 패턴 탐지 레이어 도입

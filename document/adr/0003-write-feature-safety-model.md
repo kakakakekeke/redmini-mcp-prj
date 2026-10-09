@@ -13,6 +13,8 @@ related:
   - "[[index]]"
   - "[[0001-initial-architecture]]"
   - "[[mcp_tools_spec]]"
+aliases:
+  - 0003-write-feature-safety-model
 ---
 
 # ADR-0003: 쓰기(Write) 기능 보안 모델 및 가드 전략

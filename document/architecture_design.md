@@ -11,6 +11,8 @@ tags:
 aliases:
   - Architecture Design
 status: draft
+related:
+  - "[[index]]"
 ---
 
 # 자체 Redmine MCP 서버 아키텍처 설계서

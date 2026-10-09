@@ -15,6 +15,8 @@ related:
   - "[[0003-write-feature-safety-model]]"
   - "[[DL-0007-dry-run-default-true]]"
   - "[[redmine_api_specification]]"
+aliases:
+  - DL-0010-wiki-creation-tool-design
 ---
 
 # DL-0010: 위키 등록 및 수정(create_or_update_wiki) 도구 설계 결정

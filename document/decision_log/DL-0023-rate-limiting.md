@@ -10,6 +10,10 @@ tags:
 related:
   - "[[security_audit_report]]"
   - "[[0004-transition-to-streamable-http]]"
+updated: 2026-09-21
+aliases:
+  - DL-0023-rate-limiting
+status: active
 ---
 
 # DL-0023: express-rate-limit 미들웨어 도입 및 HTTP 엔드포인트 Rate Limiting 적용

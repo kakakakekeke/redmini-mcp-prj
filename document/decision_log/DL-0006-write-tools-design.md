@@ -13,6 +13,8 @@ related:
   - "[[index]]"
   - "[[0003-write-feature-safety-model]]"
   - "[[mcp_tools_spec]]"
+aliases:
+  - DL-0006-write-tools-design
 ---
 
 # DL-0006: 2단계 쓰기 도구 설계 결정 (분리 vs 통합)

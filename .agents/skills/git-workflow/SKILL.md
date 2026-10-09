@@ -14,7 +14,7 @@ description: Redmine MCP 프로젝트의 Git Worktree 기반 다중 에이전트
 ```
 * **타입**: `feat` (기능), `fix` (버그), `docs` (문서), `style` (포맷팅), `refactor` (리팩토링), `test` (테스트), `chore` (기타)
 * **제목**: 영어 기준 50자 이내, 명령문 사용, 마침표 금지. 한글 사용 시 명사형으로 끝맺음.
-* **코어 파일**(`package.json`, `tsconfig.json`, `document/index.md`, `src/index.ts`, `.agents/`, `AGENTS.md`, `.husky/`, `.claude/`, `CLAUDE.md`, `.mcp.json`) 변경 시 본문에 `[Impact-Reviewed]` 포함. 병합 커밋도 병합되는 전체 변경분 기준으로 판정됩니다.
+* **코어 파일**(`package.json`, `tsconfig.json`, `vitest.config.*`, `document/index.md`, `src/index.ts`, `.agents/`, `AGENTS.md`, `.husky/`, `.claude/`, `CLAUDE.md`, `.mcp.json`) 변경 시 본문에 `[Impact-Reviewed]` 포함. 병합 커밋도 병합되는 전체 변경분 기준으로 판정됩니다.
 * **훅 우회 금지**: `--no-verify`, `HUSKY=0`, `core.hooksPath` 변경, main 체크아웃에서의 `cherry-pick`/`revert`/`am` 금지.
 
 ## 2. 격리된 작업 환경 (Git Worktree) 사용법 (Manual)
@@ -24,7 +24,7 @@ description: Redmine MCP 프로젝트의 Git Worktree 기반 다중 에이전트
    ```bash
    # 저장소 루트에서 실행
    git worktree add .worktrees/<브랜치명> -b <브랜치명>
-   # 예시: git worktree add .worktrees/feature-login -b feature/login
+   # 예시: git worktree add .worktrees/feat-login -b feat/login (타입은 커밋 타입과 동일)
    ```
 2. **이동 및 작업 수행**
    ```bash
