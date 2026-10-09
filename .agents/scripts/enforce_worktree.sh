@@ -41,6 +41,7 @@ rel_path=${target_file#"$toplevel/"}
 
 # Whitelist check (단일 기준: .agents/main_allowlist, DL-0028)
 MAIN_ALLOWLIST_FILE="$toplevel/.agents/main_allowlist"   # 환경변수로 교체 불가
+# shellcheck source=main_allowlist.sh
 . "$(dirname "$0")/main_allowlist.sh"
 if is_main_allowed "$rel_path"; then
   echo '{"decision": "allow"}'

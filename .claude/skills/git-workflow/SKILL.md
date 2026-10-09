@@ -13,7 +13,7 @@ description: Redmine MCP 프로젝트의 Git Worktree 기반 작업 절차와 �
 ```
 - 타입: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore` (스코프 필수)
 - 제목: 영어 50자 이내 명령문, 마침표 금지. 한글은 명사형 종결.
-- 코어 파일(`package.json`, `tsconfig.json`, `vitest.config.*`, `document/index.md`, `src/index.ts`, `.agents/`, `AGENTS.md`, `.husky/`, `.claude/`, `CLAUDE.md`, `.mcp.json`) 변경 시 본문에 `[Impact-Reviewed]` 포함. 병합 커밋은 병합되는 전체 변경분으로 판정하므로, 코어 파일을 건드린 브랜치를 병합할 때도 태그가 필요하다.
+- 코어 파일(`package.json`, `tsconfig.json`, `vitest.config.*`, `document/index.md`, `src/index.ts`, `.agents/`, `AGENTS.md`, `.husky/`, `.claude/`, `CLAUDE.md`, `.mcp.json`, `.shellcheckrc`) 변경 시 본문에 `[Impact-Reviewed]` 포함. 병합 커밋은 병합되는 전체 변경분으로 판정하므로, 코어 파일을 건드린 브랜치를 병합할 때도 태그가 필요하다.
 - `--no-verify`, `HUSKY=0`, `core.hooksPath` 변경 절대 금지(Bash 훅이 차단). 훅이 막으면 원인을 고친다.
 
 ## 2. 격리 환경

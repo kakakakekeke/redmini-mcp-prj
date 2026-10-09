@@ -1,5 +1,6 @@
 #!/bin/bash
 # PostToolUse(Edit|Write|MultiEdit): TypeScript 파일 수정 시 tsc --noEmit 실행, 에러를 Claude에게 전달.
+# shellcheck source=lib.sh
 . "${0%/*}/lib.sh"
 read_hook_input
 file=$(jq -r '.tool_input.file_path // ""' <<<"$input")

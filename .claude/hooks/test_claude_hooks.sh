@@ -94,6 +94,48 @@ check "worktree: cherry-pick 허용"           allow "$(bash_cmd 'git cherry-pic
 check "main: 일반 git 명령 허용"              allow "$(bash_cmd 'git status && git log --oneline -3' "$MAIN")"
 check "main: merge 허용"                     allow "$(bash_cmd 'git merge --no-ff feat/x' "$MAIN")"
 check "core.hooksPath 조회는 허용"            allow "$(bash_cmd 'git config --get core.hooksPath' "$MAIN")"
+check "core.hooksPath 값 없는 조회 허용"      allow "$(bash_cmd 'git config core.hooksPath' "$MAIN")"
+check "core.hooksPath 조회 후 파이프 허용"    allow "$(bash_cmd 'git -C /x config core.hooksPath | cat' "$MAIN")"
+check "core.hooksPath 조회 후 && 허용"       allow "$(bash_cmd 'git config core.hooksPath && echo ok' "$MAIN")"
+check "heredoc 본문의 core.hooksPath 허용"    allow "$(bash_cmd "cat > f.txt <<'EOF'
+Set core.hooksPath to an absolute path via npm run prepare
+EOF" "$HERE")"
+check "python 문자열의 core.hooksPath 허용"   allow "$(bash_cmd "python3 -c 'print(\"core.hooksPath is set\")'" "$HERE")"
+check "커밋 메시지 속 core.hooksPath 허용"     allow "$(bash_cmd 'git commit -m "docs: explain git config core.hooksPath behaviour"' "$HERE")"
+check "echo 문장 속 core.hooksPath 허용"       allow "$(bash_cmd 'echo "do not change core.hooksPath manually"' "$HERE")"
+check "git config --unset core.hooksPath 차단" deny "$(bash_cmd 'git config --unset core.hooksPath' "$HERE")"
+check "git config --global core.hooksPath 설정 차단" deny "$(bash_cmd 'git config --global core.hooksPath /tmp/h' "$HERE")"
+check "git config --local core.hooksPath 설정 차단" deny "$(bash_cmd 'cd x && git config --local core.hooksPath=/tmp' "$HERE")"
+check "git config --file 지정 core.hooksPath 설정 차단" deny "$(bash_cmd 'git config --file .git/config core.hooksPath /tmp' "$HERE")"
+check "git -C 경로 config core.hooksPath 설정 차단" deny "$(bash_cmd 'git -C /x config core.hooksPath /tmp' "$HERE")"
+check "git config --add core.hooksPath 차단"   deny "$(bash_cmd 'git config --add core.hooksPath /tmp' "$HERE")"
+check "git config --replace-all core.hooksPath 차단" deny "$(bash_cmd 'git config --replace-all core.hooksPath /tmp' "$HERE")"
+check "git config set core.hooksPath 차단"     deny "$(bash_cmd 'git config set core.hooksPath /tmp' "$HERE")"
+check "git config unset core.hooksPath 차단"   deny "$(bash_cmd 'git config unset core.hooksPath' "$HERE")"
+check "대소문자 바꾼 키 설정 차단"              deny "$(bash_cmd 'git config CORE.HOOKSPATH /tmp' "$HERE")"
+check "git -c core.hooksPath=/dev/null commit 차단" deny "$(bash_cmd 'git -c core.hooksPath=/dev/null commit' "$HERE")"
+check "git -c 붙여쓴 형태 차단"                deny "$(bash_cmd 'git -ccore.hooksPath=/dev/null commit -m x' "$HERE")"
+check "git config --remove-section core 차단"  deny "$(bash_cmd 'git config --remove-section core' "$HERE")"
+check "sh -c 안의 core.hooksPath 설정 차단"    deny "$(bash_cmd "sh -c 'git config core.hooksPath /x'" "$HERE")"
+check "core.hooksPath 조회 리다이렉션 허용"     allow "$(bash_cmd 'git config core.hooksPath 2>/dev/null || true' "$HERE")"
+# 리뷰 반영: 선행 키워드·값 위치·따옴표·변수로 쓰기를 숨기는 형태 (fail-closed)
+# shellcheck disable=SC2016 # "$K" 는 가드에 넘기는 명령 문자열의 리터럴
+for c in 'if git config core.hooksPath /x; then :; fi' '! git config core.hooksPath /x' 'eval git config core.hooksPath /x' \
+         'timeout 5 git config core.hooksPath /x' 'nice git config core.hooksPath /x' 'for i in 1; do git config core.hooksPath /x; done' \
+         'git config core.hooksPath get' 'git config core.hooksPath list' 'git config core.hooksPath /x  # list' \
+         'git -C "/a b" config core.hooksPath /x' 'K=core.hooksPath; git config "$K" /x' 'git config "core.hooks""Path" /x' \
+         'xargs git config core.hooksPath < f' 'eval "git config core.hooksPath /x"' 'git --git-dir="/a b" config core.hooksPath /x' \
+         'git -c "core.hooksPath=/x" commit -m y' '"git" config core.hooksPath /x' '\git config core.hooksPath /x' \
+         "git -c 'core.hooksPath'=/x commit" 'k=core.hooksPath; git config $k /x' 'git config $(echo core.hooksPath) /x' \
+         'git config core."hooksPath" /x' 'git config core.hooks\Path /x' "GIT_CONFIG_KEY_0='core'.hooksPath GIT_CONFIG_COUNT=1 git commit" \
+         'git config core.hooksPath x # --get'; do
+  check "우회 형태 차단: $c" deny "$(bash_cmd "$c" "$HERE")"
+done
+check "commit -m 속 'config <key> 값' 산문 허용" allow "$(bash_cmd 'git commit -m "fix: config core.hooksPath x via prepare"' "$HERE")"
+check "echo 산문 속 git config <key> 값 허용"   allow "$(bash_cmd 'echo "never run git config core.hooksPath /x by hand"' "$HERE")"
+check "git config get <key> 조회 허용"          allow "$(bash_cmd 'git config get core.hooksPath' "$HERE")"
+check "--get 뒤 값 패턴 조회 허용"             allow "$(bash_cmd 'git config --get core.hooksPath husky' "$HERE")"
+check "GIT_CONFIG_* 환경변수로 키 주입 차단"    deny "$(bash_cmd 'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/dev/null git commit -m x' "$HERE")"
 check "Bash 깨진 JSON 차단"                   deny2 "$(echo 'oops' | "$HOOKS/guard_bash.sh" 2>&1; echo "rc=$?")"
 
 echo "📂 enforce_document_index.sh"

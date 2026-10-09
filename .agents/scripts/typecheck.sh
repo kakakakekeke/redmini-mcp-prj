@@ -13,9 +13,8 @@ fi
 
 # Run fast type check
 npx tsc --noEmit > .agents/typecheck.log 2>&1
-EXIT_CODE=$?
 
-# If there is an error, we could output it, but for a PostToolUse hook, 
+# The exit code is intentionally not used: for a PostToolUse hook,
 # we just return empty JSON. The agent can read .agents/typecheck.log if needed.
 echo "{}"
 exit 0
