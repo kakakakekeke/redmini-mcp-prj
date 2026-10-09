@@ -26,7 +26,8 @@ related:
 * (현재 등록된 모든 P1 작업이 완료되었습니다.)
 
 ### ⚠️ P2 — 단기 조치 (보안 감사 기반, 1-2주)
-* (현재 등록된 모든 P2 작업이 완료되었습니다.)
+1. [ ] `fix/e2e-dynamic-port` : E2E 테스트 고정 포트(33333)·고정 대기(2초) 제거 — 동적 포트 + `/health` 폴링으로 연속·동시 `npm test` 간헐 실패 해소 (pre-commit·병합이 `npm test`에 의존) — [[DL-0029-agent-rules-cleanup]] 후속
+2. [ ] `chore/guardrail-polish` : commit-msg `Broken pipe` 출력 잡음 제거, Bash 가드의 훅 경로 설정 조회 명령 오탐(명령 문자열 전체 매칭) 수정, shellcheck 정적 분석 도입
 
 ### 📌 P3 — 중기 조치 (보안 감사 기반, 1개월)
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
