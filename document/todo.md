@@ -21,7 +21,7 @@ tags:
 * (현재 등록된 모든 P1 작업이 완료되었습니다.)
 
 ### ⚠️ P2 — 단기 조치 (보안 감사 기반, 1-2주)
-* (현재 등록된 모든 P2 보안 작업이 완료되었습니다.)
+1. [ ] `chore/agent-rules-cleanup` : 낡은 규칙 정리(AGENTS.md 도구 원칙, ADR-0002 대체, 템플릿·frontmatter, 브랜치 네이밍, 문서 인덱스 검사 강화) 및 TDD 효율 개선(리뷰 등급화, 커버리지 기준선, 테스트 누락 경고, DL 작성 조건 축소)
 
 ### 📌 P3 — 중기 조치 (보안 감사 기반, 1개월)
 - [ ] [Hold] `feat/security-per-user-authz` : Per-User 인가 체계 설계 및 구현 (사용자 지시로 보류됨, 별도 ADR 작성 필요, 아키텍처 수준 변경) — [[security_audit_report]] 4항
